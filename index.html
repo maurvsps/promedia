@@ -1,0 +1,2933 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Promedia</title>
+<link rel="icon" type="image/png" href="logo.png">
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, updateProfile }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { getFirestore, doc, getDoc, setDoc }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBX0SLElkX2gryepvNrR1koAMBtRbcod_Y",
+  authDomain: "notasulima-e4984.firebaseapp.com",
+  projectId: "notasulima-e4984",
+  storageBucket: "notasulima-e4984.firebasestorage.app",
+  messagingSenderId: "725701401423",
+  appId: "1:725701401423:web:487d61b6570ea6b00c433a"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+// Expose to global scope for non-module script
+window._fbAuth = auth;
+window._fbDb   = db;
+window._fbDoc  = doc;
+window._fbGetDoc  = getDoc;
+window._fbSetDoc  = setDoc;
+window._fbSignOut = () => signOut(auth);
+window._fbSignIn  = (email, pass) => signInWithEmailAndPassword(auth, email, pass);
+window._fbSignUp  = (email, pass) => createUserWithEmailAndPassword(auth, email, pass);
+window._fbUpdateProfile = (user, data) => updateProfile(user, data);
+window._fbGoogleSignIn = () => signInWithPopup(auth, new GoogleAuthProvider());
+
+// Tracks which uid we've already loaded+initialized in this page session, so a
+// re-fire of onAuthStateChanged for the SAME user (e.g. token refresh) never
+// re-fetches Firestore and clobbers in-memory changes that haven't synced yet.
+window._lastInitedUid = null;
+
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    window._currentUser = user;
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('appRoot').style.display    = '';
+    document.getElementById('userEmailLabel').textContent = user.displayName || user.email;
+    if (window._lastInitedUid === user.uid) {
+      // Same user still signed in (e.g. auth token refresh) — do NOT reload
+      // state from the cloud, or unsaved local edits would be lost.
+      return;
+    }
+    window._lastInitedUid = user.uid;
+    // Load from Firestore
+    let hadCloudData = false;
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      if (snap.exists()) {
+        window._loadedState = snap.data().state;
+        hadCloudData = true;
+      }
+    } catch(e) { console.warn('Firestore load error', e); }
+    // Si veníamos del modo local ("Usar sin cuenta") y esta cuenta todavía no tiene
+    // datos en la nube (o sea, es una cuenta nueva), migramos los cursos/notas
+    // guardados localmente al nuevo perfil en vez de arrancar con un estado vacío.
+    // Si la cuenta ya tenía datos propios (ej. inició sesión en una cuenta
+    // existente), no la sobreescribimos: sus datos locales de invitado siguen
+    // disponibles en este navegador bajo el modo local.
+    if (!hadCloudData && window._pendingGuestState) {
+      window._loadedState = window._pendingGuestState;
+    }
+    window._pendingGuestState = null;
+    window._appInit();
+  } else {
+    window._lastInitedUid = null;
+    window._currentUser = null;
+    document.getElementById('authScreen').style.display = '';
+    document.getElementById('appRoot').style.display    = 'none';
+  }
+});
+</script>
+<style>
+:root {
+  --bg: #000000;
+  --s1: #121212;
+  --s3: #1c1c1e;
+  --border: #262626;
+  --border2: #363636;
+  --text: #ececec;
+  --sub: #a8a8a8;
+  --muted: #737373;
+  --red: #ff5f5f;
+  --red-bg: rgba(255,95,95,0.1);
+  --yellow: #f5c842;
+  --yellow-bg: rgba(245,200,66,0.1);
+  --green: #3dd68c;
+  --green-bg: rgba(61,214,140,0.1);
+  --accent: #ffffff;
+  --accent-text: #0a0a0a;
+  --r: 16px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── HEADER ── */
+.app-header {
+  background: var(--s1);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.app-header-top {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px 10px; flex-wrap: wrap;
+}
+.app-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
+.app-logo { height: 28px; width: auto; max-width: 120px; object-fit: contain; flex-shrink: 0; }
+.header-icons { display: flex; gap: 8px; flex-shrink: 0; }
+.header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.cycle-chips-row { padding-top: 10px; }
+.cycle-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.cycle-chips::-webkit-scrollbar { display: none; }
+
+@media (max-width: 640px) {
+  .app-header { padding: 10px 12px; }
+  .app-title { font-size: 14px; }
+  .icon-btn { width: 32px; height: 32px; font-size: 16px; }
+}
+.chip {
+  padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--border);
+  background: transparent; color: var(--sub); font-family: inherit;
+  font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  transition: all 0.15s; flex-shrink: 0;
+}
+.chip.active { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.chip-wrap { display: inline-flex; flex-shrink: 0; align-items: center; gap: 4px; }
+.chip-del {
+  padding: 4px 8px 4px 6px; border-radius: 20px; border: 1.5px solid var(--border);
+  background: transparent; color: var(--muted); font-family: inherit;
+  font-size: 14px; font-weight: 400; cursor: pointer; white-space: nowrap;
+  transition: all 0.15s; flex-shrink: 0; line-height: 1;
+  display: none;
+}
+.chip-del:active { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+.chip-wrap.deletable .chip-del { display: flex; align-items: center; }
+/* eval row order arrows on main card */
+.eval-row-order-btns { display: flex; flex-direction: column; gap: 1px; flex-shrink: 0; }
+.eval-row-order-btn {
+  width: 20px; height: 14px; border-radius: 3px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); font-size: 7px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; line-height:1; padding:0;
+}
+.eval-row-order-btn:active { background: var(--s3); color: var(--text); border-color: var(--accent); }
+.eval-row-order-btn:disabled { opacity: 0.2; cursor: default; }
+.icon-btn {
+  width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid var(--border);
+  background: var(--s1); color: var(--sub); display: flex; align-items: center;
+  justify-content: center; cursor: pointer; font-size: 18px; flex-shrink: 0;
+}
+.icon-btn:active { background: var(--s3); }
+
+.settings-option {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  padding: 14px 12px; border-radius: 12px; border: 1px solid var(--border);
+  background: var(--s3); color: var(--text); font-family: inherit;
+  cursor: pointer; margin-bottom: 8px;
+}
+.settings-option:last-child { margin-bottom: 0; }
+.settings-option:active { background: var(--border); }
+.settings-option-icon { font-size: 18px; flex-shrink: 0; }
+.settings-option-label { font-size: 13px; font-weight: 600; }
+
+/* ── MAIN ── */
+main { padding: 12px; padding-bottom: 80px; }
+
+/* Dashboard chip: visually separated from cycle chips */
+.chip-dash {
+  border-color: var(--border2);
+  position: relative; margin-right: 8px; padding-right: 14px;
+}
+.chip-dash::after {
+  content: ''; position: absolute; right: -8px; top: 50%; transform: translateY(-50%);
+  width: 1px; height: 18px; background: var(--border);
+}
+.chip-dash.active { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+
+/* ── DASHBOARD ── */
+.dash-hello { font-size: 13px; color: var(--sub); margin-bottom: 12px; font-weight: 600; }
+.dash-hello b { color: var(--text); }
+.dash-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+.dash-stat {
+  background: var(--s1); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 12px 10px;
+}
+.dash-stat-label {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--muted); margin-bottom: 6px;
+}
+.dash-stat-val { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+@media (max-width: 640px) {
+  .dash-grid { grid-template-columns: repeat(2, 1fr); }
+  .dash-stat-val { font-size: 18px; }
+}
+.dash-row2 { display: grid; grid-template-columns: 1.6fr 1fr; gap: 10px; margin-bottom: 12px; }
+@media (max-width: 640px) { .dash-row2 { grid-template-columns: 1fr; } }
+.dash-card {
+  background: var(--s1); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 14px;
+}
+.dash-card-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--muted); margin-bottom: 10px;
+}
+.dash-perf-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 0; border-bottom: 1px solid var(--border); gap: 8px;
+}
+.dash-perf-row:last-child { border-bottom: none; }
+.dash-perf-name { font-size: 12.5px; font-weight: 600; flex: 1; }
+.dash-perf-val { font-size: 13px; font-weight: 700; }
+.dash-perf-icon { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
+.dash-empty { font-size: 12px; color: var(--muted); padding: 6px 0; }
+.dash-predict-num { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; margin: 6px 0 4px; }
+.dash-predict-sub { font-size: 12px; color: var(--sub); line-height: 1.4; }
+.dash-predict-course { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.dash-evo-card { margin-bottom: 12px; }
+.dash-risk-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 0;
+}
+.dash-progress-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin: 10px 0 8px; }
+.dash-progress-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
+.dash-progress-label { font-size: 12px; color: var(--sub); font-weight: 600; }
+.dash-progress-pct { font-size: 20px; font-weight: 800; }
+
+/* ── POND PANEL ── */
+.pond-panel {
+  background: var(--s1); border: 1px solid var(--border);
+  border-radius: var(--r); margin-bottom: 14px; overflow: hidden;
+}
+.pond-top {
+  padding: 16px 16px 12px; display: flex;
+  align-items: center; justify-content: space-between; gap: 12px;
+}
+.pond-global { display: flex; flex-direction: column; }
+.pond-global-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--muted); margin-bottom: 2px;
+}
+.pond-global-val { font-size: 42px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+.pond-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.pond-status { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
+.pond-status.green { background: var(--green-bg); color: var(--green); }
+.pond-status.yellow { background: var(--yellow-bg); color: var(--yellow); }
+.pond-status.red { background: var(--red-bg); color: var(--red); }
+.pond-prog-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; width: 100px; }
+.pond-prog-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+
+/* Pond credits toggle */
+.pond-credits-row {
+  padding: 6px 16px 10px;
+  display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.pond-credits-label { font-size: 10px; color: var(--muted); font-weight: 600; }
+.pond-credits-val { font-size: 12px; font-weight: 700; color: var(--sub); }
+.pond-credits-edit-btn {
+  margin-left: auto; font-size: 11px; font-weight: 600;
+  color: var(--accent); background: transparent; border: none;
+  cursor: pointer; padding: 3px 8px; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+.pond-credits-edit-btn:active { background: rgba(255,255,255,0.1); }
+
+.pond-courses {
+  display: flex; overflow-x: auto; scrollbar-width: none; gap: 0;
+}
+.pond-courses::-webkit-scrollbar { display: none; }
+
+.pond-course-item {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 10px 14px; gap: 4px; border-right: 1px solid var(--border);
+  flex-shrink: 0; cursor: pointer; min-width: 80px; position: relative;
+  transition: background 0.1s;
+}
+.pond-course-item:last-child { border-right: none; }
+.pond-course-item:active { background: var(--s3); }
+.pond-course-dot { width: 10px; height: 10px; border-radius: 50%; }
+.pond-course-name {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--muted); text-align: center; line-height: 1.2;
+}
+.pond-course-val { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+.pond-course-credits { font-size: 9px; color: var(--muted); }
+
+/* ── COURSES GRID ── */
+.courses-grid { display: flex; flex-direction: column; gap: 12px; }
+
+/* ── DRAGGABLE CARD ── */
+.course-card {
+  background: var(--s1); border: 1px solid var(--border);
+  border-radius: var(--r); overflow: hidden;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  touch-action: pan-y;
+}
+.course-card.dragging {
+  opacity: 0.4; transform: scale(0.98);
+}
+.course-card.drag-over {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.25);
+}
+
+.card-header {
+  padding: 14px 14px 10px; display: flex;
+  align-items: center; gap: 10px; border-bottom: 1px solid var(--border);
+}
+.card-color-dot {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  cursor: pointer; border: 2.5px solid rgba(255,255,255,0.15);
+  transition: transform 0.15s;
+}
+.card-color-dot:active { transform: scale(1.2); }
+.card-title { flex: 1; font-size: 13px; font-weight: 700; letter-spacing: 0.01em; }
+.card-avg { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+
+/* Order buttons */
+.card-order-btns {
+  display: flex; flex-direction: column; gap: 2px; flex-shrink: 0;
+}
+.order-btn {
+  width: 22px; height: 18px; border-radius: 4px;
+  border: 1.5px solid var(--border); background: transparent;
+  color: var(--muted); font-size: 9px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; line-height: 1;
+}
+.order-btn:active { background: var(--s3); color: var(--text); border-color: var(--accent); }
+.order-btn:disabled { opacity: 0.2; cursor: default; }
+
+/* Drag handle */
+.drag-handle {
+  color: var(--muted); font-size: 14px; cursor: grab; padding: 4px 2px;
+  flex-shrink: 0; user-select: none; touch-action: none;
+}
+.drag-handle:active { cursor: grabbing; }
+
+.card-edit-btn {
+  width: 32px; height: 32px; border-radius: 8px;
+  border: 1.5px solid var(--border); background: transparent;
+  color: var(--muted); display: flex; align-items: center;
+  justify-content: center; cursor: pointer; font-size: 14px; flex-shrink: 0;
+}
+.card-edit-btn:active { background: var(--s3); color: var(--text); }
+
+/* Eval rows */
+.eval-list { padding: 4px 0; }
+.eval-row {
+  display: flex; align-items: center; padding: 9px 14px 9px 8px; gap: 8px;
+  border-bottom: 1px solid rgba(38,38,38,0.6);
+}
+.eval-row:last-child { border-bottom: none; }
+.eval-name-col { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.eval-name { font-size: 12px; font-weight: 500; color: var(--text); }
+.eval-meta { font-size: 10px; color: var(--muted); }
+.nota-wrap { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.nota-label { font-size: 9px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+.nota-input {
+  font-family: inherit; font-size: 16px; font-weight: 700;
+  background: var(--s3); border: 1.5px solid var(--border); border-radius: 8px;
+  padding: 4px 0; width: 50px; text-align: center; color: var(--text);
+  outline: none; transition: border-color 0.15s; -moz-appearance: textfield;
+}
+.nota-input::-webkit-inner-spin-button,
+.nota-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.nota-input:focus { border-color: var(--accent); }
+.nota-input.c-red  { color: var(--red);    border-color: rgba(255,95,95,0.4); }
+.nota-input.c-yellow { color: var(--yellow); border-color: rgba(245,200,66,0.4); }
+.nota-input.c-green  { color: var(--green);  border-color: rgba(61,214,140,0.4); }
+.nota-input.c-pred { opacity: 0.55; border-style: dashed; }
+
+/* Toggle */
+.toggle-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.toggle-label { font-size: 9px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.toggle { position: relative; width: 36px; height: 20px; cursor: pointer; }
+.toggle input { display: none; }
+.toggle-track { position: absolute; inset: 0; background: var(--border); border-radius: 10px; transition: background 0.2s; }
+.toggle-thumb {
+  position: absolute; top: 3px; left: 3px; width: 14px; height: 14px;
+  background: #fff; border-radius: 50%; transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.toggle input:checked ~ .toggle-track { background: var(--green); }
+.toggle input:checked ~ .toggle-thumb { transform: translateX(16px); }
+.partial-col { font-size: 11px; font-weight: 600; color: var(--muted); min-width: 32px; text-align: right; }
+
+/* Card footer */
+.card-footer {
+  padding: 8px 14px; background: rgba(0,0,0,0.15);
+  display: flex; justify-content: space-between; align-items: center;
+  border-top: 1px solid var(--border);
+}
+.card-footer-label { font-size: 10px; color: var(--muted); font-weight: 500; }
+.card-footer-right { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.card-footer-val { font-size: 12px; font-weight: 700; }
+.card-footer-credits { font-size: 10px; color: var(--muted); }
+
+/* ── ADD COURSE BTN ── */
+.add-course-btn {
+  background: transparent; border: 1.5px dashed var(--border2);
+  border-radius: var(--r); padding: 20px; width: 100%;
+  color: var(--muted); font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.add-course-btn:active { border-color: var(--accent); color: var(--accent); }
+
+/* ── SHEETS / MODALS ── */
+.overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  z-index: 200; align-items: flex-end; justify-content: center;
+  backdrop-filter: blur(2px);
+}
+.overlay.open { display: flex; }
+.sheet {
+  background: var(--s1); border: 1px solid var(--border);
+  border-radius: 20px 20px 0 0; width: 100%; max-width: 540px;
+  max-height: 90vh; overflow-y: auto; padding: 0 0 32px;
+  overscroll-behavior: contain;
+}
+.sheet-handle {
+  width: 36px; height: 4px; background: var(--border2);
+  border-radius: 2px; margin: 10px auto 14px;
+}
+.sheet-title {
+  font-size: 15px; font-weight: 700; padding: 0 16px 12px;
+  border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px;
+}
+.sheet-body { padding: 14px 16px; }
+.changelog-entry { margin-bottom: 20px; }
+.changelog-entry:last-child { margin-bottom: 4px; }
+.changelog-date { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 2px; }
+.changelog-title { font-size: 14px; font-weight: 700; color: var(--sub); margin-bottom: 8px; }
+.changelog-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.changelog-list li { font-size: 12.5px; line-height: 1.5; color: var(--sub); padding-left: 18px; position: relative; }
+.changelog-list li::before { content: '•'; position: absolute; left: 4px; color: var(--accent); font-weight: 700; }
+.field-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--muted); margin-bottom: 5px;
+}
+.field-input {
+  width: 100%; background: var(--s3); border: 1.5px solid var(--border);
+  border-radius: 10px; color: var(--text); font-family: inherit;
+  font-size: 14px; padding: 10px 12px; outline: none;
+  transition: border-color 0.15s; margin-bottom: 14px;
+}
+.field-input:focus { border-color: var(--accent); }
+
+/* Credits row in edit sheet */
+.credits-row {
+  display: flex; gap: 10px; margin-bottom: 14px;
+}
+.credits-field { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+
+/* Eval editor */
+.eval-editor { margin: 4px 0 12px; }
+.eval-editor-head {
+  display: grid; grid-template-columns: 22px 1fr 44px 50px 50px 30px;
+  gap: 5px; font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--muted); padding: 0 2px 6px;
+  border-bottom: 1px solid var(--border); margin-bottom: 6px;
+}
+.eval-editor-row {
+  display: grid; grid-template-columns: 22px 1fr 44px 50px 50px 30px;
+  gap: 5px; align-items: center; margin-bottom: 6px;
+}
+.eval-order-btns { display: flex; flex-direction: column; gap: 1px; cursor: grab; }
+.eval-order-btns:active { cursor: grabbing; }
+.eval-order-btn {
+  width: 22px; height: 14px; border-radius: 3px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); font-size: 7px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; line-height:1; padding:0;
+}
+.eval-order-btn:active { background: var(--s3); color: var(--text); border-color: var(--accent); }
+.eval-order-btn:disabled { opacity: 0.2; cursor: default; }
+.mini-inp {
+  background: var(--s3); border: 1.5px solid var(--border); border-radius: 7px;
+  color: var(--text); font-family: inherit; font-size: 12px; padding: 6px;
+  outline: none; width: 100%; text-align: center; -moz-appearance: textfield;
+}
+.mini-inp::-webkit-inner-spin-button, .mini-inp::-webkit-outer-spin-button { -webkit-appearance: none; }
+.mini-inp.name-inp { text-align: left; padding-left: 8px; }
+.mini-inp:focus { border-color: var(--accent); }
+.rm-eval-btn {
+  background: transparent; border: none; color: var(--muted); font-size: 18px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 6px;
+}
+.rm-eval-btn:active { color: var(--red); background: var(--red-bg); }
+.add-eval-row-btn {
+  width: 100%; background: transparent; border: 1.5px dashed var(--border2);
+  border-radius: 8px; color: var(--muted); font-family: inherit;
+  font-size: 12px; font-weight: 600; padding: 7px; cursor: pointer; margin-top: 4px;
+}
+.add-eval-row-btn:active { border-color: var(--green); color: var(--green); }
+.weight-indicator {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 11px;
+  font-weight: 600; padding: 4px 10px; border-radius: 20px; margin: 6px 0 14px;
+}
+.wi-ok  { background: var(--green-bg); color: var(--green); }
+.wi-warn { background: var(--yellow-bg); color: var(--yellow); }
+.wi-err  { background: var(--red-bg); color: var(--red); }
+
+/* ── CAREER / MALLA WIZARD ── */
+.wizard-step-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--accent); margin-bottom: 10px;
+}
+.career-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 6px; }
+.career-opt {
+  background: var(--s3); border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 14px; text-align: left; color: var(--text); font-family: inherit;
+  cursor: pointer; display: flex; flex-direction: column; gap: 3px;
+}
+.career-opt:active { border-color: var(--accent); }
+.career-opt-name { font-size: 14px; font-weight: 700; }
+.career-opt-sub { font-size: 11px; color: var(--muted); }
+.mode-grid { display: flex; flex-direction: column; gap: 10px; }
+.mode-opt {
+  background: var(--s3); border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 14px; text-align: left; color: var(--text); font-family: inherit;
+  cursor: pointer; display: flex; flex-direction: column; gap: 3px;
+}
+.mode-opt:active { border-color: var(--accent); }
+.mode-opt-name { font-size: 13px; font-weight: 700; display:flex; align-items:center; gap:6px; }
+.mode-opt-sub { font-size: 11px; color: var(--muted); line-height: 1.4; }
+.ciclo-chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.ciclo-chip {
+  padding: 8px 14px; border-radius: 10px; border: 1.5px solid var(--border);
+  background: var(--s3); color: var(--sub); font-family: inherit;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.ciclo-chip.active { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.wizard-back-link {
+  background: none; border: none; color: var(--muted); font-family: inherit;
+  font-size: 12px; font-weight: 600; cursor: pointer; padding: 0 0 12px; display: flex; align-items: center; gap: 4px;
+}
+.wizard-back-link:active { color: var(--accent); }
+.course-check-row {
+  display: flex; align-items: center; gap: 10px; padding: 9px 0;
+  border-bottom: 1px solid rgba(38,38,38,0.6);
+}
+.course-check-row:last-child { border-bottom: none; }
+.course-check-row input[type=checkbox] {
+  appearance: none; -webkit-appearance: none; width: 19px; height: 19px; border-radius: 5px;
+  border: 1.5px solid var(--border2); background: var(--s3); flex-shrink: 0; cursor: pointer;
+  position: relative; margin: 0;
+}
+.course-check-row input[type=checkbox]:checked { background: var(--accent); border-color: var(--accent); }
+.course-check-row input[type=checkbox]:checked::after {
+  content: ''; position: absolute; left: 6px; top: 2px; width: 5px; height: 9px;
+  border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+.year-stepper { display: flex; align-items: center; gap: 14px; }
+.stepper-btn {
+  width: 38px; height: 38px; border-radius: 10px; border: 1.5px solid var(--border);
+  background: var(--s3); color: var(--text); font-size: 19px; font-weight: 700; cursor: pointer;
+}
+.stepper-btn:active { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.year-stepper-val { font-size: 21px; font-weight: 800; min-width: 58px; text-align: center; }
+.card-avg-input {
+  width: 62px; background: transparent; border: none; outline: none;
+  font-family: inherit; font-size: 26px; font-weight: 800; letter-spacing: -0.03em;
+  line-height: 1; text-align: right; -moz-appearance: textfield;
+}
+.card-avg-input::-webkit-inner-spin-button, .card-avg-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.card-avg-input::placeholder { color: inherit; opacity: 0.5; }
+.eval-list.evals-disabled { opacity: 0.4; pointer-events: none; filter: grayscale(0.4); }
+.avg-clear-btn {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  border: 1.5px solid var(--border2); background: transparent;
+  color: var(--muted); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 11px; line-height: 1; margin-left: -2px;
+}
+.avg-clear-btn:active { background: var(--red-bg); color: var(--red); border-color: var(--red); }
+.pond-secondary-row {
+  padding: 8px 16px 10px; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.pond-secondary-label { font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.pond-secondary-val { font-size: 15px; font-weight: 800; margin-left: auto; }
+.course-check-name { flex: 1; font-size: 12.5px; font-weight: 600; }
+button.course-check-row { color: var(--text); }
+.course-check-credits { font-size: 11px; color: var(--muted); font-weight: 600; flex-shrink: 0; }
+.ciclo-accordion { margin-bottom: 4px; }
+.ciclo-acc-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 4px; cursor: pointer; border-bottom: 1px solid var(--border);
+}
+.ciclo-acc-title { font-size: 12.5px; font-weight: 700; }
+.ciclo-acc-count { font-size: 11px; color: var(--accent); font-weight: 700; }
+.ciclo-acc-body { padding: 2px 4px 10px; display: none; }
+.ciclo-acc-body.open { display: block; }
+.ciclo-acc-arrow { color: var(--muted); font-size: 10px; transition: transform 0.15s; }
+.ciclo-acc-arrow.open { transform: rotate(90deg); }
+.wizard-summary-bar {
+  background: var(--s1); padding: 10px 0 0;
+  font-size: 12px; color: var(--sub); font-weight: 600;
+  border-top: 1px solid var(--border); margin-top: 4px;
+}
+.wizard-scroll-list { max-height: 40vh; overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
+
+.sheet-actions {
+  display: flex; gap: 8px; padding: 14px 16px 0;
+  border-top: 1px solid var(--border);
+}
+.btn {
+  flex: 1; padding: 12px; border-radius: 12px; font-family: inherit;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  border: 1.5px solid var(--border); background: var(--s3); color: var(--text);
+}
+.btn:active { opacity: 0.8; }
+.btn:disabled { opacity: 0.35; cursor: default; }
+.btn-accent { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.btn-danger { border-color: var(--red); color: var(--red); background: transparent; flex: 0; padding: 12px 16px; }
+.btn-danger:active { background: var(--red-bg); }
+
+/* ── COLOR PICKER ── */
+.color-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 16px; }
+.cswatch {
+  aspect-ratio: 1; border-radius: 50%; cursor: pointer;
+  border: 3px solid transparent; transition: transform 0.15s, border-color 0.15s;
+}
+.cswatch:active { transform: scale(0.9); }
+.cswatch.selected { border-color: rgba(255,255,255,0.7); transform: scale(1.12); }
+
+/* ── AUTH SCREEN ── */
+#authScreen {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; padding: 24px;
+}
+.auth-card {
+  background: var(--s1); border: 1px solid var(--border);
+  border-radius: 20px; padding: 28px 24px; width: 100%; max-width: 380px;
+}
+.auth-logo { text-align: center; margin-bottom: 6px; }
+.auth-logo img { height: 64px; width: auto; max-width: 220px; object-fit: contain; }
+.auth-title { font-size: 21px; font-weight: 700; text-align: center; margin-bottom: 4px; }
+.auth-sub { font-size: 12px; color: var(--muted); text-align: center; margin-bottom: 24px; }
+.auth-tabs { display: flex; gap: 0; margin-bottom: 20px; border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; }
+.auth-tab {
+  flex: 1; padding: 9px; background: transparent; border: none;
+  color: var(--muted); font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.auth-tab.active { background: var(--accent); color: var(--accent-text); }
+.auth-err { font-size: 12px; color: var(--red); text-align: center; min-height: 18px; margin-bottom: 10px; }
+.auth-btn {
+  width: 100%; padding: 12px; border-radius: 12px; border: none;
+  background: var(--accent); color: var(--accent-text); font-family: inherit;
+  font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 6px;
+  transition: opacity 0.15s;
+}
+.auth-btn:active { opacity: 0.8; }
+.auth-btn:disabled { opacity: 0.5; cursor: default; }
+.auth-or { text-align:center; color: var(--muted); font-size: 11px; margin: 14px 0; }
+.auth-guest-btn {
+  width: 100%; padding: 10px; border-radius: 12px;
+  border: 1.5px solid var(--border); background: transparent;
+  color: var(--sub); font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer;
+}
+.auth-guest-btn:active { background: var(--s3); }
+.auth-google-btn {
+  width: 100%; padding: 11px 16px; border-radius: 12px;
+  border: 1.5px solid var(--border); background: var(--s3);
+  color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.auth-google-btn:active { border-color: var(--accent); }
+/* ＋ cycle button inline with chips */
+.chip-add-btn {
+  padding: 5px 10px; border-radius: 20px; border: 1.5px dashed var(--border2);
+  background: transparent; color: var(--muted); font-family: inherit;
+  font-size: 14px; cursor: pointer; flex-shrink: 0; line-height: 1;
+  transition: all 0.15s;
+}
+.chip-add-btn:active { border-color: var(--accent); color: var(--accent); }
+/* User badge in header */
+.user-badge {
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.user-email-label {
+  font-size: 10px; color: var(--muted); max-width: 80px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.signout-btn {
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 8px; cursor: pointer; font-family: inherit;
+}
+.signout-btn:active { color: var(--red); border-color: var(--red); }
+.sync-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--muted);
+  transition: background 0.3s; flex-shrink: 0;
+}
+.sync-dot.syncing { background: var(--yellow); }
+.sync-dot.synced  { background: var(--green); }
+.sync-dot.error   { background: var(--red); }
+
+.credits-config {
+  padding: 14px 16px;
+}
+.credits-cycle-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+}
+.credits-cycle-label { font-size: 12px; color: var(--sub); flex: 1; }
+.credits-total-inp {
+  background: var(--s3); border: 1.5px solid var(--border); border-radius: 8px;
+  color: var(--text); font-family: inherit; font-size: 14px; font-weight: 700;
+  padding: 8px 10px; width: 80px; text-align: center; outline: none; -moz-appearance: textfield;
+}
+.credits-total-inp::-webkit-inner-spin-button, .credits-total-inp::-webkit-outer-spin-button { -webkit-appearance: none; }
+.credits-total-inp:focus { border-color: var(--accent); }
+
+.credits-course-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.credits-course-row:last-child { border-bottom: none; }
+.credits-course-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.credits-course-name { flex: 1; font-size: 13px; font-weight: 600; }
+.credits-course-inp {
+  background: var(--s3); border: 1.5px solid var(--border); border-radius: 8px;
+  color: var(--text); font-family: inherit; font-size: 14px; font-weight: 700;
+  padding: 8px 10px; width: 70px; text-align: center; outline: none; -moz-appearance: textfield;
+}
+.credits-course-inp::-webkit-inner-spin-button, .credits-course-inp::-webkit-outer-spin-button { -webkit-appearance: none; }
+.credits-course-inp:focus { border-color: var(--accent); }
+.credits-course-pct { font-size: 11px; color: var(--muted); min-width: 38px; text-align: right; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="authScreen">
+  <div class="auth-card">
+    <div class="auth-logo"><img src="logo.png" alt="Promedia"></div>
+    <div class="auth-title">Promedia</div>
+    <div class="auth-sub">Ten el control de tus notas</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Iniciar sesión</button>
+      <button class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">Registrarse</button>
+    </div>
+    <div id="authNameRow" style="display:none">
+      <div class="field-label">Nombre</div>
+      <input class="field-input" id="authName" type="text" placeholder="Tu nombre" autocomplete="name">
+    </div>
+    <div class="field-label">Correo</div>
+    <input class="field-input" id="authEmail" type="email" placeholder="correo@ulima.edu.pe" autocomplete="email">
+    <div class="field-label">Contraseña</div>
+    <input class="field-input" id="authPass" type="password" placeholder="••••••••" autocomplete="current-password" style="margin-bottom:6px">
+    <div class="auth-err" id="authErr"></div>
+    <button class="auth-btn" id="authSubmitBtn" onclick="submitAuth()">Iniciar sesión</button>
+    <div class="auth-or">— o —</div>
+    <button class="auth-google-btn" onclick="signInWithGoogle()">
+      <svg width="18" height="18" viewBox="0 0 48 48" style="flex-shrink:0"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.4-4z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 18.9 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4c-7.7 0-14.3 4.4-17.7 10.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.5 35.6 26.9 36.5 24 36.5c-5.2 0-9.6-3-11.4-7.4l-6.5 5C9.6 40 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.4 4.2-4.5 5.5l6.2 5.2C40.9 35.7 44 30.3 44 24c0-1.3-.1-2.7-.4-4z"/></svg>
+      Continuar con Google
+    </button>
+    <div class="auth-or">— o continúa sin cuenta —</div>
+    <button class="auth-guest-btn" onclick="enterAsGuest()">Usar sin cuenta (solo local)</button>
+  </div>
+</div>
+
+<!-- APP ROOT -->
+<div id="appRoot" style="display:none">
+
+<header class="app-header">
+  <div class="app-header-top">
+    <div class="app-title"><img src="logo.png" alt="Promedia" class="app-logo">Promedia</div>
+    <div class="header-right">
+      <div class="header-icons">
+        <button class="icon-btn" onclick="openSettingsSheet()" title="Configuración" style="font-size:16px">⚙️</button>
+      </div>
+      <div class="user-badge" id="userBadge" style="display:none">
+        <div class="sync-dot" id="syncDot" title="Estado de sincronización"></div>
+        <span class="user-email-label" id="userEmailLabel"></span>
+        <button class="signout-btn" onclick="doSignOut()">Salir</button>
+      </div>
+    </div>
+  </div>
+  <div class="cycle-chips-row" id="cycleChipsRow">
+    <div class="cycle-chips" id="cycleChips"></div>
+  </div>
+</header>
+
+<main>
+  <div id="viewCiclo">
+    <div class="pond-panel">
+      <div class="pond-top">
+        <div class="pond-global">
+          <div class="pond-global-label">Promedio general (carrera)</div>
+          <div class="pond-global-val" id="globalVal">—</div>
+        </div>
+        <div class="pond-meta">
+          <div class="pond-status" id="globalStatus"></div>
+          <div class="pond-prog-bar"><div class="pond-prog-fill" id="globalBar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="pond-secondary-row">
+        <span class="pond-secondary-label">Últimos 3 períodos</span>
+        <span class="pond-secondary-val" id="last3Val">—</span>
+      </div>
+      <div class="pond-secondary-row">
+        <span class="pond-secondary-label">Ciclo activo</span>
+        <span class="pond-secondary-val" id="activeCycleVal">—</span>
+      </div>
+      <div class="pond-credits-row">
+        <span class="pond-credits-label">Créditos del ciclo</span>
+        <span class="pond-credits-val" id="pondCreditsDisplay">—</span>
+        <button class="pond-credits-edit-btn" onclick="openCreditsSheet()">Configurar créditos</button>
+      </div>
+      <div class="pond-courses" id="pondCourses"></div>
+    </div>
+    <div class="courses-grid" id="coursesGrid"></div>
+  </div>
+
+  <div id="viewDashboard" style="display:none"></div>
+</main>
+
+<!-- COLOR PICKER -->
+<div class="overlay" id="colorSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Color del curso</div>
+    <div class="color-grid" id="colorGrid"></div>
+    <div class="sheet-actions">
+      <button class="btn" onclick="closeSheet('colorSheet')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT COURSE -->
+<div class="overlay" id="editSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="editSheetTitle">Editar curso</div>
+    <div class="sheet-body">
+      <div class="field-label">Nombre del curso</div>
+      <input class="field-input" id="editCourseName" placeholder="ej. CÁLCULO I">
+      <div class="field-label">Créditos del curso</div>
+      <input class="field-input" id="editCourseCredits" type="number" inputmode="numeric" min="0" max="20" placeholder="ej. 3" style="margin-bottom:14px">
+      <div class="field-label">Evaluaciones</div>
+      <div class="eval-editor">
+        <div class="eval-editor-head">
+          <span></span><span>Nombre</span><span>Sem.</span><span>Peso%</span><span>Nota</span><span></span>
+        </div>
+        <div id="editEvalRows"></div>
+        <button class="add-eval-row-btn" onclick="addEditEvalRow()">＋ Evaluación</button>
+      </div>
+      <div class="weight-indicator wi-ok" id="editWeightInd">Pesos: 0%</div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-danger" id="deleteBtn">Eliminar</button>
+      <button class="btn" onclick="closeSheet('editSheet')">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveEdit()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD COURSE -->
+<div class="overlay" id="addCourseSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Nuevo curso</div>
+    <div class="sheet-body">
+      <div class="field-label">Curso</div>
+      <input class="field-input" id="newCourseName" placeholder="Toca para elegir un curso de la malla" readonly style="cursor:pointer">
+      <div id="manualCourseHint" style="font-size:11px;color:var(--accent);font-weight:600;margin-top:6px;margin-bottom:14px;cursor:pointer" onclick="useManualCourseEntry()">✍️ Prefiero escribirlo manualmente</div>
+      <div class="field-label">Créditos del curso</div>
+      <input class="field-input" id="newCourseCredits" type="number" inputmode="numeric" min="0" max="20" placeholder="ej. 3" style="margin-bottom:14px">
+      <div class="field-label">Evaluaciones</div>
+      <div class="eval-editor">
+        <div class="eval-editor-head">
+          <span></span><span>Nombre</span><span>Sem.</span><span>Peso%</span><span>Nota</span><span></span>
+        </div>
+        <div id="addEvalRows"></div>
+        <button class="add-eval-row-btn" onclick="addNewEvalRow()">＋ Evaluación</button>
+      </div>
+      <div class="weight-indicator wi-warn" id="addWeightInd">Pesos: 0%</div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn" onclick="closeSheet('addCourseSheet')">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveNewCourse()">Crear curso</button>
+    </div>
+  </div>
+</div>
+
+<!-- PICK COURSE FROM MALLA (used when adding a course to a cycle) -->
+<div class="overlay" id="pickCourseSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Elige un curso</div>
+    <div class="sheet-body" id="pickCourseBody"></div>
+    <div class="sheet-actions">
+      <button class="btn" onclick="closeSheet('pickCourseSheet')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ADD CYCLE (wizard) -->
+<div class="overlay" id="addCycleSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="addCycleTitle">Nuevo ciclo</div>
+    <div class="sheet-body" id="addCycleBody"></div>
+    <div class="sheet-actions" id="addCycleActions"></div>
+  </div>
+</div>
+
+<!-- CAREER / MALLA SETUP -->
+<div class="overlay" id="careerSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="careerSheetTitle">Elige tu carrera</div>
+    <div class="sheet-body" id="careerBody"></div>
+    <div class="sheet-actions" id="careerActions"></div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="overlay" id="confirmSheet">
+  <div class="sheet" style="padding-bottom:24px">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="confirmTitle">¿Estás seguro?</div>
+    <div class="sheet-body" style="padding-bottom:0">
+      <p id="confirmMsg" style="color:var(--sub);font-size:13px;line-height:1.5"></p>
+    </div>
+    <div class="sheet-actions" style="margin-top:14px">
+      <button class="btn" onclick="closeSheet('confirmSheet')">Cancelar</button>
+      <button class="btn btn-danger" id="confirmOkBtn" style="flex:1;padding:12px">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="creditsSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Créditos del ciclo</div>
+    <div class="credits-config" id="creditsBody"></div>
+    <div class="sheet-actions">
+      <button class="btn" onclick="closeSheet('creditsSheet')">Cancelar</button>
+      <button class="btn btn-accent" onclick="saveCredits()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHANGELOG / NOVEDADES -->
+<div class="overlay" id="changelogSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">✨ Novedades</div>
+    <div class="sheet-body" id="changelogBody"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-accent" style="flex:1" onclick="closeSheet('changelogSheet')">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="overlay" id="settingsSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">⚙️ Configuración</div>
+    <div class="sheet-body">
+      <button class="settings-option" id="createAccountOption" style="display:none" onclick="closeSheet('settingsSheet');openCreateAccountFromGuest()">
+        <span class="settings-option-icon">👤</span>
+        <span class="settings-option-label">Crear cuenta o iniciar sesión</span>
+      </button>
+      <button class="settings-option" onclick="closeSheet('settingsSheet');openCareerSheet()">
+        <span class="settings-option-icon">🎓</span>
+        <span class="settings-option-label">Cambiar carrera</span>
+      </button>
+      <button class="settings-option" onclick="closeSheet('settingsSheet');openChangelog(false)">
+        <span class="settings-option-icon">🆕</span>
+        <span class="settings-option-label">Novedades</span>
+      </button>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn" style="flex:1" onclick="closeSheet('settingsSheet')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /appRoot -->
+
+<script>
+// ════════════════════════════════════════════════
+//  PALETTE & CONSTANTS
+// ════════════════════════════════════════════════
+const PALETTE = [
+  '#6c8ef5','#a78bf5','#f5836c','#f5c842','#3dd68c',
+  '#f56ca5','#5cd4f5','#f5a83d','#85d45c','#f55c5c',
+  '#5cf5d4','#c4a35c'
+];
+
+// ════════════════════════════════════════════════
+//  MALLAS CURRICULARES (planes de estudio)
+// ════════════════════════════════════════════════
+const MALLAS = {
+  sistemas: {
+    label: "Ingeniería de Sistemas",
+    mallas: {
+      '2026': {
+        1: [ {name:"Lenguaje y comunicacion I",credits:4}, {name:"Procesos psicologicos",credits:3}, {name:"Ética ciudadana",credits:2}, {name:"Introduccion a la ingenieria",credits:3}, {name:"Metodologias de investigación",credits:3}, {name:"Precalculo",credits:5} ],
+        2: [ {name:"Lenguaje y comunicacion II",credits:3}, {name:"Filosofía aplicada",credits:3}, {name:"Fundamentos de economia",credits:3}, {name:"Introducción al comercio internacional",credits:3}, {name:"Álgebra lineal",credits:3}, {name:"Calculo I",credits:5} ],
+        3: [ {name:"Inteligencia artificial aplicada",credits:3}, {name:"Cálculo II",credits:5}, {name:"Sistemas organizacionales",credits:2}, {name:"Física para sistemas",credits:4}, {name:"Estructuras discretas de computación",credits:4}, {name:"Introducción a la programación",credits:4} ],
+        4: [ {name:"Estadistica y probabilidad",credits:4}, {name:"Calculo III",credits:3}, {name:"Modelación e integracion de sistemas",credits:3}, {name:"Costeo de operaciones",credits:3}, {name:"Programación orientada a objetos",credits:4}, {name:"Arquitectura de computadoras",credits:4} ],
+        5: [ {name:"Estadistica aplicada",credits:4}, {name:"Investigación de operaciones I",credits:4}, {name:"Sistemas operativos",credits:4}, {name:"Desarrollo de competencias gerenciales",credits:3}, {name:"Estructuras de datos I",credits:4}, {name:"Modelamiento de base de datos",credits:4} ],
+        6: [ {name:"Ingenieria de procesos de negocio",credits:3}, {name:"Redes de computadoras",credits:4}, {name:"Simulación",credits:3}, {name:"Estructuras de datos II",credits:4}, {name:"Programación web",credits:3}, {name:"Gestión financiera",credits:3}, {name:"Electivo",credits:3} ],
+        7: [ {name:"Sistemas de inteligencia empresarial",credits:4}, {name:"Gestión de operaciones",credits:3}, {name:"Ingenieria de software I",credits:4}, {name:"Aprendizaje de maquina",credits:4}, {name:"Ciberseguridad",credits:4}, {name:"Electivo",credits:3} ],
+        8: [ {name:"Propuesta de investigación",credits:3}, {name:"Sistemas ERP",credits:3}, {name:"Auditoría y control de sistemas",credits:3}, {name:"Ingeniería de software II",credits:4}, {name:"Electivo",credits:3}, {name:"Electivo",credits:3} ],
+        9: [ {name:"Seminario de investigación I",credits:4}, {name:"Planeamiento estratégico",credits:3}, {name:"Gestión de proyectos",credits:3}, {name:"Seguridad de sistemas",credits:4}, {name:"Electivo",credits:3} ],
+        10: [ {name:"Seminario de investigacion II",credits:4}, {name:"Gestión de servicios digitales",credits:4}, {name:"Proyecto integrador de sistemas",credits:4}, {name:"Electivo",credits:3}, {name:"Electivo",credits:3} ],
+      }
+    },
+    electivos: [
+      "Paradigmas de programacion",
+      "Análisis y diseño de algoritmos",
+      "Deep learning",
+      "Sistemas distribuidos",
+      "Proyecto de desarrollo de software",
+      "Proyecto de videojuegos",
+      "Arquitectura de tecnologias de la informacion",
+      "Seguridad, salud ocupacional y bienestar organizacional",
+      "Internet de las cosas",
+      "Redes avanzadas",
+      "Programación móvil",
+      "Analitica con big data",
+      "Computacion en la nube",
+      "Devops",
+      "Gestión de base de datos",
+      "Ingeniería del conocimiento",
+      "Tópicos avanzados en ciberseguridad",
+      "Analítica de negocios",
+      "Innovacion digital",
+      "Arquitectura empresarial",
+      "Interaccion humano computadora",
+      "Arquitectura de software"
+    ]
+  },
+  industrial: {
+    label: "Ingeniería Industrial",
+    mallas: {
+      '2026': {
+        1: [ {name:"Lenguaje y comunicacion I",credits:4}, {name:"Procesos psicologicos",credits:3}, {name:"Ética ciudadana",credits:2}, {name:"Introduccion a la ingenieria",credits:3}, {name:"Metodologias de investigación",credits:3}, {name:"Precalculo",credits:5} ],
+        2: [ {name:"Lenguaje y comunicacion II",credits:3}, {name:"Filosofía aplicada",credits:3}, {name:"Fundamentos de economia",credits:3}, {name:"Introducción al comercio internacional",credits:3}, {name:"Álgebra lineal",credits:3}, {name:"Calculo I",credits:5} ],
+        3: [ {name:"Inteligencia artificial aplicada",credits:3}, {name:"Sistemas organizacionales",credits:2}, {name:"Diseño asistido por el computador",credits:3}, {name:"Química general",credits:4}, {name:"Fisica I",credits:5}, {name:"Calculo II",credits:5} ],
+        4: [ {name:"Estadistica y probabilidad",credits:4}, {name:"Calculo III",credits:3}, {name:"Costeo de operaciones",credits:3}, {name:"Fundamentos de programación",credits:3}, {name:"Fisica II",credits:5}, {name:"Mecanica",credits:4} ],
+        5: [ {name:"Investigacion de operaciones I",credits:4}, {name:"Fundamentos de operaciones y logistica",credits:4}, {name:"Ingenieria económica",credits:4}, {name:"Electricidad y electronica",credits:3}, {name:"Diseño de experimentos",credits:4}, {name:"Ecuaciones diferenciales",credits:3} ],
+        6: [ {name:"Investigacion de operaciones II",credits:4}, {name:"Ergonomia y diseno del trabajo",credits:4}, {name:"Planeamiento y control de operaciones",credits:4}, {name:"Innovacion en ingenieria",credits:3}, {name:"Procesos industriales",credits:4}, {name:"Electivo",credits:3} ],
+        7: [ {name:"Ingenieria financiera",credits:3}, {name:"Diseño de instalaciones",credits:3}, {name:"Inteligencia de negocios",credits:3}, {name:"Modelos de sistemas logisticos",credits:4}, {name:"Calidad",credits:3}, {name:"Procesos de manufactura",credits:3}, {name:"Electivo",credits:3} ],
+        8: [ {name:"Simulacion de procesos",credits:4}, {name:"Modelamiento predictivo de datos",credits:3}, {name:"Sistemas integrados de gestion",credits:3}, {name:"Analisis de problemas de ingenieria",credits:3}, {name:"Automatizacion industrial",credits:3}, {name:"Gestion de proyectos",credits:3}, {name:"Electivo",credits:3} ],
+        9: [ {name:"Etica y gestion humana",credits:3}, {name:"Proyecto de ingenieria aplicada I",credits:4}, {name:"Ingenieria comercial",credits:3}, {name:"Electivo",credits:3}, {name:"Electivo",credits:3} ],
+        10: [ {name:"Proyecto ingenieria aplicada II",credits:4}, {name:"Gerencia estrategica",credits:3}, {name:"Electivo",credits:3}, {name:"Electivo",credits:3}, {name:"Electivo",credits:3} ],
+      }
+    },
+    electivos: [
+      "Ingenieria de seguridad",
+      "Gestion de proyectos de diseño",
+      "Supply chain management",
+      "Direccion en implementacion de proyectos",
+      "Diseno y prototipado",
+      "Procesos logisticos ERP",
+      "Gerencia B2B",
+      "Taller de liderazgo",
+      "Materiales en la manufactura",
+      "Compras y gestion del abastecimiento",
+      "Gestion del comercio internacional",
+      "Robotic process automation",
+      "Ingenieria del transporte y distribucion",
+      "Herramientas de marketing digital",
+      "Programacion para ingenieria",
+      "Transformacion digital",
+      "Juego de negocios",
+      "Creatividad, innovacion y emprendimiento",
+      "Machine learning",
+      "Gestion de operaciones de servicios",
+      "Sostenibilidad industrial",
+      "Sistemas de informacion gerencial",
+      "Introduccion a sistemas de gestion de bases de datos",
+      "Formulacion y evaluación de proyectos",
+      "Diseño de proyectos sostenibles",
+      "Herramientas informaticas",
+      "Gestion de recursos",
+      "Seguridad, salud ocupacional y bienestar organizacional",
+      "Taller de habilidades gerenciales",
+      "Estrategia de inteligencia empresarial",
+      "Metodologias agiles",
+      "Tecnologias de programacion",
+      "Lean six sigma",
+      "Gestion de riesgos y portafolios"
+    ]
+  },
+  civil: {
+    label: "Ingeniería Civil",
+    mallas: {
+      '2026': {
+        1: [ {name:"Lenguaje y comunicacion I",credits:4}, {name:"Procesos psicologicos",credits:3}, {name:"Ética ciudadana",credits:2}, {name:"Introduccion a la ingenieria",credits:3}, {name:"Metodologias de investigación",credits:3}, {name:"Precalculo",credits:5} ],
+        2: [ {name:"Lenguaje y comunicacion II",credits:3}, {name:"Filosofía aplicada",credits:3}, {name:"Fundamentos de economia",credits:3}, {name:"Introducción al comercio internacional",credits:3}, {name:"Álgebra lineal",credits:3}, {name:"Calculo I",credits:5} ],
+        3: [ {name:"Cálculo II",credits:4}, {name:"Química aplicada",credits:3}, {name:"Topografía",credits:3}, {name:"Ingeniería gráfica",credits:3}, {name:"Física I",credits:4}, {name:"Inteligencia artificial aplicada",credits:3} ],
+        4: [ {name:"Ecuaciones diferenciales",credits:4}, {name:"Tecnología del concreto",credits:3}, {name:"Física II",credits:4}, {name:"Modelación de información de edificaciones I",credits:4}, {name:"Tecnología de construcción I",credits:4}, {name:"Geología aplicada",credits:4} ],
+        5: [ {name:"Programación digital",credits:3}, {name:"Estática",credits:4}, {name:"Tecnología de construcción II",credits:4}, {name:"Modelación de información de edificaciones II",credits:4}, {name:"Dinámica",credits:4}, {name:"Mecánica de suelos I",credits:4} ],
+        6: [ {name:"Instalaciones en edificaciones",credits:5}, {name:"Costos y presupuestos",credits:3}, {name:"Tecnología de los materiales",credits:3}, {name:"Resistencia de materiales",credits:5}, {name:"Ingeniería ambiental",credits:3}, {name:"Mecánica de suelos II",credits:4} ],
+        7: [ {name:"Mecánica de fluidos",credits:4}, {name:"Gestión de proyectos de construcción",credits:4}, {name:"Métodos numéricos",credits:2}, {name:"Análisis estructural I",credits:3}, {name:"Ingeniería de transporte I",credits:3}, {name:"Fundamentos del planeamiento urbano y regional",credits:2}, {name:"Ética, liderazgo y responsabilidad social",credits:2} ],
+        8: [ {name:"Hidráulica",credits:4}, {name:"Gestión de proyectos de operación y mantenimiento",credits:3}, {name:"Ingeniería sismorresistente",credits:4}, {name:"Gestión estratégica de contratos",credits:3}, {name:"Concreto armado I",credits:4}, {name:"Electivo",credits:3} ],
+        9: [ {name:"Hidrología",credits:4}, {name:"Seminario de investigación I",credits:4}, {name:"Electivo",credits:3} ],
+        10: [ {name:"Estructuras metálicas",credits:5}, {name:"Seminario de investigacion II",credits:4}, {name:"Electivo",credits:3} ],
+      }
+    },
+    electivos: [
+      "Gestión de calidad",
+      "Diseño y construcción vial",
+      "Analisis estructural II",
+      "Geomática",
+      "Concreto armado II",
+      "Abastecimiento de agua y saneamiento",
+      "Puentes",
+      "Gestión de seguridad y salud en el trabajo",
+      "Concreto preesforzado",
+      "Túneles",
+      "Gestión de riesgos y desastres",
+      "Geotecnia en infraestructura de transporte",
+      "Productividad en obras",
+      "Infraestructuras sostenibles",
+      "Gestión y desarrollo inmobiliario",
+      "Albañilería",
+      "Gestion de riesgos en proyectos",
+      "Ingeniería de transporte II",
+      "Ingeniería de los recursos hidráulicos",
+      "Pavimentos",
+      "Seguridad, salud ocupacional y bienestar organizacional"
+    ]
+  },
+  mecatronica: {
+    label: "Ingeniería Mecatrónica",
+    mallas: {
+      '2026': {
+        1: [ {name:"Lenguaje y comunicacion I",credits:4}, {name:"Procesos psicologicos",credits:3}, {name:"Ética ciudadana",credits:2}, {name:"Introduccion a la ingenieria",credits:3}, {name:"Metodologias de investigación",credits:3}, {name:"Precalculo",credits:5} ],
+        2: [ {name:"Lenguaje y comunicacion II",credits:3}, {name:"Filosofía aplicada",credits:3}, {name:"Fundamentos de economia",credits:3}, {name:"Introducción al comercio internacional",credits:3}, {name:"Álgebra lineal",credits:3}, {name:"Calculo I",credits:5} ],
+        3: [ {name:"Inteligencia artificial aplicada",credits:3}, {name:"Cálculo II",credits:5}, {name:"Circuitos digitales",credits:4}, {name:"Física I",credits:4}, {name:"Sistemas organizacionales",credits:2}, {name:"Dibujo mecánico",credits:4} ],
+        4: [ {name:"Ecuaciones diferenciales",credits:4}, {name:"Estadística y probabilidad",credits:4}, {name:"Circuitos eléctricos",credits:4}, {name:"Física II",credits:4}, {name:"Fundamentos de máquinas y mecanismos",credits:3}, {name:"Química general",credits:4} ],
+        5: [ {name:"Análisis complejo y transformadas",credits:4}, {name:"Costos y presupuestos",credits:3}, {name:"Programación de computadoras",credits:3}, {name:"Mecánica aplicada",credits:4}, {name:"Ingeniería de resistencia de metales",credits:4}, {name:"Circuitos electrónicos",credits:4} ],
+        6: [ {name:"Análisis de señales y sistemas",credits:4}, {name:"Tecnología de materiales de innovación",credits:3}, {name:"Control de sistemas dinamicos I",credits:4}, {name:"Ingeniería de fluidos y calor",credits:3}, {name:"Desarrollo de competencias gerenciales",credits:3}, {name:"Microcontroladores",credits:3}, {name:"Sensores y actuadores inteligentes",credits:3} ],
+        7: [ {name:"Diseño y manufactura asistida por computador",credits:3}, {name:"Máquinas eléctricas",credits:3}, {name:"Aprendizaje de máquinas",credits:3}, {name:"Sistemas embebidos e IoT industrial",credits:4}, {name:"Control de sistemas dinámicos II",credits:4}, {name:"Formulación y evaluación de proyectos",credits:3}, {name:"Electivo",credits:3} ],
+        8: [ {name:"Diseño de sistemas mecatrónicos",credits:4}, {name:"Proyecto de investigación",credits:4}, {name:"Control de procesos industriales",credits:3}, {name:"Manufactura integrada por computadora",credits:4}, {name:"Procesamiento digital de imágenes",credits:4}, {name:"Electivo",credits:3} ],
+        9: [ {name:"Diseño de plantas industriales",credits:4}, {name:"Proyecto integrador de mecatrónica I",credits:4}, {name:"Gestión de proyectos",credits:3}, {name:"Electivo",credits:3}, {name:"Electivo",credits:3} ],
+        10: [ {name:"Sistemas robóticos industriales",credits:3}, {name:"Proyecto integrador de mecatrónica II",credits:4}, {name:"Electivo",credits:3}, {name:"Electivo",credits:3} ],
+      }
+    },
+    electivos: [
+      "Sistemas neumáticos",
+      "Redes y protocolos industriales",
+      "Sistemas autónomos no tripulados",
+      "Visión artificial para robótica",
+      "Transformación digital",
+      "Diseño de proyectos sostenibles",
+      "Big data",
+      "Ciberseguridad",
+      "Diseño y fabricación de grippers",
+      "Realidad virtual y aumentada",
+      "Diseño y prototipado",
+      "Seguridad, salud ocupacional y bienestar organizacional",
+      "Gestión de proyectos de diseño",
+      "Tecnología industrial",
+      "Sistemas SCADA",
+      "Digital twin",
+      "Tecnologías de programación"
+    ]
+  },
+  ambiental: {
+    label: "Ingeniería Ambiental",
+    mallas: {
+      '2026': {
+        1: [ {name:"Lenguaje y comunicacion I",credits:4}, {name:"Procesos psicologicos",credits:3}, {name:"Ética ciudadana",credits:2}, {name:"Introduccion a la ingenieria",credits:3}, {name:"Metodologias de investigación",credits:3}, {name:"Precalculo",credits:5} ],
+        2: [ {name:"Lenguaje y comunicacion II",credits:3}, {name:"Filosofía aplicada",credits:3}, {name:"Fundamentos de economia",credits:3}, {name:"Introducción al comercio internacional",credits:3}, {name:"Álgebra lineal",credits:3}, {name:"Calculo I",credits:5} ],
+        3: [ {name:"Inteligencia artificial aplicada",credits:3}, {name:"Sistemas de información geográfica",credits:3}, {name:"Fundamentos de programación",credits:3}, {name:"Física I",credits:5}, {name:"Química general",credits:4}, {name:"Cálculo II",credits:5} ],
+        4: [ {name:"Principios de ingeniería sostenible",credits:3}, {name:"Estadística y probabilidad",credits:4}, {name:"Biología ambiental",credits:4}, {name:"Física II",credits:5}, {name:"Química ambiental",credits:4}, {name:"Cálculo III",credits:3} ],
+        5: [ {name:"Estadística aplicada",credits:4}, {name:"Derecho y legislación ambiental",credits:3}, {name:"Cambio climático",credits:3}, {name:"Termodinámica",credits:3}, {name:"Ciencia del suelo",credits:3}, {name:"Técnicas instrumentales de análisis",credits:4} ],
+        6: [ {name:"Gestión sostenible de residuos",credits:3}, {name:"Costeo de proyectos ambientales",credits:3}, {name:"Tecnologías de control de la contaminación del aire",credits:4}, {name:"Energías renovables",credits:3}, {name:"Mecánica de fluidos",credits:3}, {name:"Microbiología ambiental",credits:3}, {name:"Electivo",credits:3} ],
+        7: [ {name:"Medio ambiente y sociedad",credits:3}, {name:"Recursos naturales y ecosistemas",credits:3}, {name:"Tecnologías de control de la contaminación del agua",credits:4}, {name:"Ética y responsabilidad social",credits:3}, {name:"Sistemas integrados de gestión",credits:3}, {name:"Economía ambiental",credits:3}, {name:"Electivo",credits:3} ],
+        8: [ {name:"Evaluación del impacto ambiental",credits:3}, {name:"Hidrología",credits:4}, {name:"Tecnologías de control de la contaminación del suelo",credits:4}, {name:"Inteligencia de negocios",credits:3}, {name:"Gestión de recursos energéticos",credits:3}, {name:"Electivo",credits:3}, {name:"Electivo",credits:3} ],
+        9: [ {name:"Ecotoxicología ambiental",credits:3}, {name:"Proyecto de ingeniería aplicada I",credits:4}, {name:"Formulación y diseño de proyectos sostenibles",credits:3}, {name:"Electivo",credits:3}, {name:"Electivo",credits:3} ],
+        10: [ {name:"Proyecto de ingeniería aplicada II",credits:4}, {name:"Restauración y compensación ambiental",credits:3}, {name:"Gestión de proyectos",credits:3}, {name:"Electivo",credits:3}, {name:"Electivo",credits:3} ],
+      }
+    },
+    electivos: [
+      "Servicios ecosistémicos",
+      "Análisis del ciclo de vida",
+      "Evaluación de riesgos y gestión de productos químicos peligrosos",
+      "Prevención y negociación de conflictos ambientales",
+      "Biotecnología ambiental",
+      "Modelamiento y simulación de sistemas ambientales",
+      "Seguridad, salud ocupacional y bienestar organizacional",
+      "Ecología",
+      "Tecnología solar fotovoltaica",
+      "Deterioro ambiental y salud humana",
+      "Gestión de riesgos ambientales",
+      "Diseño y prototipado",
+      "Tecnologías para la biorremediación",
+      "Economía circular",
+      "Calidad de aire interior",
+      "Logística verde y cadena de suministro sostenible",
+      "Estrategias empresariales para la descarbonización",
+      "Aplicaciones de IoT para la sostenibilidad ambiental",
+      "Manejo de sitios contaminados"
+    ]
+  }
+};
+
+function mallaCiclos(careerKey, mallaKey) {
+  const c = MALLAS[careerKey];
+  if (!c) return {};
+  return (c.mallas[mallaKey||'2026']) || {};
+}
+
+// ════════════════════════════════════════════════
+//  VINCULACIÓN DE CURSOS CON LA MALLA
+//  (corrige nombres antiguos/manuales para que coincidan
+//   con el nombre oficial de la malla, sin tocar notas)
+// ════════════════════════════════════════════════
+function normalizeCourseName(s) {
+  return (s||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // quita tildes
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+// Alias conocidos de nombres antiguos/incompletos -> nombre oficial de la malla
+const COURSE_ALIASES = {
+  'PSICOLOGIA': 'PROCESOS PSICOLOGICOS',
+  'ETICA': 'ÉTICA CIUDADANA',
+  'INTRODUCCION A LA INGENIERIA': 'INTRODUCCION A LA INGENIERIA',
+  'METODOLOGIA DE INVESTIGACION': 'METODOLOGIAS DE INVESTIGACIÓN',
+};
+let _mallaNameIndex = null;
+function buildMallaNameIndex() {
+  const idx = {};
+  Object.values(MALLAS).forEach(career=>{
+    Object.values(career.mallas).forEach(mallaByCiclo=>{
+      Object.values(mallaByCiclo).forEach(list=>{
+        list.forEach(c=>{
+          if (c.name==='ELECTIVO') return;
+          idx[normalizeCourseName(c.name)] = c.name;
+        });
+      });
+    });
+    (career.electivos||[]).forEach(name=>{ idx[normalizeCourseName(name)] = name; });
+  });
+  return idx;
+}
+function linkCoursesToMalla(st) {
+  if (!st || !st.cycles) return;
+  if (!_mallaNameIndex) _mallaNameIndex = buildMallaNameIndex();
+  Object.values(st.cycles).forEach(cycle=>{
+    (cycle.courses||[]).forEach(c=>{
+      const norm = normalizeCourseName(c.name);
+      // 1) alias explícito conocido
+      if (COURSE_ALIASES[norm] && COURSE_ALIASES[norm] !== c.name) {
+        c.name = COURSE_ALIASES[norm];
+        return;
+      }
+      // 2) coincidencia normalizada exacta con algún curso de la malla
+      const canonical = _mallaNameIndex[norm];
+      if (canonical && canonical !== c.name) {
+        c.name = canonical;
+      }
+    });
+  });
+}
+
+// ════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════
+function defaultState() {
+  return {
+    currentCycle: null,
+    cycles: {}
+  };
+}
+
+let state = {};
+
+// ════════════════════════════════════════════════
+//  NOVEDADES (changelog)
+//  Se agrega una entrada nueva arriba cada vez que se
+//  implementan mejoras. CHANGELOG_VERSION siempre debe
+//  coincidir con la versión (fecha) de la primera entrada.
+// ════════════════════════════════════════════════
+const CHANGELOG = [
+  {
+    version: '2026-08-12b',
+    date: '12 ago 2026',
+    title: 'Selección de electivos más clara',
+    items: [
+      'Arreglado: en el popup de "Elige tus electivos", el contador de seleccionados (ej. "0 / 2") ya no se monta encima de los cursos — ahora la lista tiene su propio scroll y el contador queda siempre fijo debajo, visible sin tapar nada.',
+      'El popup de novedades ahora muestra el historial completo de mejoras desde la última vez que revisaste la app, no solo lo último que se agregó.'
+    ]
+  },
+  {
+    version: '2026-08-12',
+    date: '12 ago 2026',
+    title: 'Vinculación de cursos y nuevas métricas',
+    items: [
+      'Los cursos que ya tenías registrados ahora se vinculan automáticamente con el nombre oficial de tu malla (por ejemplo, "PSICOLOGIA" pasa a llamarse "PROCESOS PSICOLOGICOS"). Tus notas y evaluaciones no se ven afectadas.',
+      'Se agregó el promedio ponderado del ciclo activo, debajo de "Últimos 3 períodos".',
+      'Al eliminar un curso de un ciclo, el total de créditos del ciclo ahora se recalcula automáticamente según los cursos que quedan.',
+      'Nuevo: este panel de novedades (🆕 en la parte superior), que se irá actualizando con cada mejora.'
+    ]
+  }
+];
+const CHANGELOG_VERSION = CHANGELOG[0].version;
+
+function renderChangelogBody() {
+  document.getElementById('changelogBody').innerHTML = `
+    <div class="changelog-entry">
+      <div class="changelog-title">Las novedades se mostrarán pronto</div>
+    </div>`;
+}
+function openChangelog(markSeen) {
+  renderChangelogBody();
+  openSheet('changelogSheet');
+  if (markSeen) {
+    state.lastSeenChangelog = CHANGELOG_VERSION;
+    saveState();
+  }
+}
+function openSettingsSheet() {
+  // La opción de crear cuenta solo tiene sentido si aún no hay una sesión iniciada
+  // (es decir, si se está usando la app en modo local / "solo local").
+  const createAccBtn = document.getElementById('createAccountOption');
+  if (createAccBtn) createAccBtn.style.display = window._currentUser ? 'none' : '';
+  openSheet('settingsSheet');
+}
+// Permite crear una cuenta (o iniciar sesión en una existente) después de haber
+// usado la app en modo local. Guarda una copia del estado local actual para que,
+// si la cuenta creada es nueva, sus cursos/notas se migren automáticamente y no
+// se pierdan (ver manejo de window._pendingGuestState en onAuthStateChanged).
+function openCreateAccountFromGuest() {
+  window._pendingGuestState = JSON.parse(JSON.stringify(state));
+  document.getElementById('appRoot').style.display = 'none';
+  document.getElementById('authScreen').style.display = '';
+  switchAuthTab('register');
+}
+
+window._appInit = function() {
+  state = loadState() || defaultState();
+  linkCoursesToMalla(state);
+  // Show user badge if logged in
+  const badge = document.getElementById('userBadge');
+  if (window._currentUser) {
+    badge.style.display = 'flex';
+    setSyncDot('synced');
+  } else {
+    badge.style.display = 'none';
+  }
+  render();
+  switchView(state.currentView || 'dashboard');
+  if (state.career === undefined) {
+    // First time this account is used: ask for career (2026 only for now)
+    setTimeout(()=>openCareerSheet(true), 250);
+  } else if (state.lastSeenChangelog !== CHANGELOG_VERSION) {
+    // Ya tiene carrera configurada pero no ha visto las últimas novedades
+    setTimeout(()=>openChangelog(true), 350);
+  }
+};
+
+// ════════════════════════════════════════════════
+//  PERSISTENCE — localStorage + Firestore
+// ════════════════════════════════════════════════
+let _saveTimer = null;
+let _pendingCloudSave = null; // set while a Firestore write hasn't been confirmed yet
+
+// Local cache key is scoped per signed-in user (or 'guest') so that switching
+// accounts on the same browser can never leak one user's cached data into
+// another user's session.
+function storageKey() {
+  return 'notas26v2_' + (window._currentUser ? window._currentUser.uid : 'guest');
+}
+
+async function flushCloudSave() {
+  if (!_pendingCloudSave || !window._currentUser) return;
+  clearTimeout(_saveTimer);
+  const snapshot = _pendingCloudSave;
+  _pendingCloudSave = null;
+  try {
+    await window._fbSetDoc(
+      window._fbDoc(window._fbDb, 'users', window._currentUser.uid),
+      { state: snapshot }
+    );
+    setSyncDot('synced');
+  } catch(e) {
+    console.warn('Firestore save error', e);
+    setSyncDot('error');
+  }
+}
+
+function saveState() {
+  // Always save locally, under a key scoped to the current user
+  try { localStorage.setItem(storageKey(), JSON.stringify(state)); } catch(e) {}
+  // If logged in, debounce-sync to Firestore
+  if (window._currentUser) {
+    setSyncDot('syncing');
+    _pendingCloudSave = JSON.parse(JSON.stringify(state));
+    clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(flushCloudSave, 1200);
+  }
+}
+
+// Make sure a pending (debounced) cloud save isn't lost if the user reloads,
+// closes the tab, or switches away right after making a change.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') flushCloudSave();
+});
+window.addEventListener('pagehide', flushCloudSave);
+
+function loadState() {
+  // If Firebase loaded a cloud state, prefer that
+  if (window._loadedState) {
+    const s = window._loadedState;
+    window._loadedState = null;
+    return s;
+  }
+  try {
+    const s = localStorage.getItem(storageKey());
+    if (s) return JSON.parse(s);
+    // One-time migration: older versions of the app stored everything under a
+    // single shared (non user-scoped) key. Claim that cache for this session
+    // and remove it immediately so it can never leak into a different account.
+    const legacy = localStorage.getItem('notas26v2');
+    if (legacy) {
+      localStorage.removeItem('notas26v2');
+      localStorage.setItem(storageKey(), legacy);
+      return JSON.parse(legacy);
+    }
+    return null;
+  } catch(e) { return null; }
+}
+
+function setSyncDot(status) {
+  const dot = document.getElementById('syncDot');
+  if (dot) dot.className = 'sync-dot ' + status;
+}
+
+// ════════════════════════════════════════════════
+//  AUTH HELPERS
+// ════════════════════════════════════════════════
+let _authMode = 'login';
+
+function switchAuthTab(mode) {
+  _authMode = mode;
+  document.getElementById('tabLogin').classList.toggle('active', mode==='login');
+  document.getElementById('tabRegister').classList.toggle('active', mode==='register');
+  document.getElementById('authSubmitBtn').textContent = mode==='login' ? 'Iniciar sesión' : 'Crear cuenta';
+  document.getElementById('authNameRow').style.display = mode==='register' ? '' : 'none';
+  document.getElementById('authErr').textContent = '';
+  document.getElementById('authPass').autocomplete = mode==='login' ? 'current-password' : 'new-password';
+}
+
+async function submitAuth() {
+  const email = document.getElementById('authEmail').value.trim();
+  const pass  = document.getElementById('authPass').value;
+  const name  = document.getElementById('authName').value.trim();
+  const btn   = document.getElementById('authSubmitBtn');
+  const err   = document.getElementById('authErr');
+  if (!email||!pass) { err.textContent='Completa todos los campos.'; return; }
+  btn.disabled = true;
+  err.textContent = '';
+  try {
+    if (_authMode==='login') {
+      await window._fbSignIn(email, pass);
+    } else {
+      const cred = await window._fbSignUp(email, pass);
+      if (name) await window._fbUpdateProfile(cred.user, { displayName: name });
+    }
+  } catch(e) {
+    const msgs = {
+      'auth/invalid-email':'Correo inválido.',
+      'auth/user-not-found':'Usuario no encontrado.',
+      'auth/wrong-password':'Contraseña incorrecta.',
+      'auth/email-already-in-use':'El correo ya está registrado.',
+      'auth/weak-password':'La contraseña debe tener al menos 6 caracteres.',
+      'auth/invalid-credential':'Correo o contraseña incorrectos.',
+    };
+    err.textContent = msgs[e.code] || 'Error: ' + e.message;
+  } finally { btn.disabled = false; }
+}
+
+async function signInWithGoogle() {
+  document.getElementById('authErr').textContent = '';
+  try {
+    await window._fbGoogleSignIn();
+    // onAuthStateChanged handles the rest
+  } catch(e) {
+    if (e.code !== 'auth/popup-closed-by-user') {
+      document.getElementById('authErr').textContent = 'Error con Google: ' + e.message;
+    }
+  }
+}
+
+function enterAsGuest() {
+  // Si el usuario cancela el flujo de "crear cuenta" y vuelve al modo local,
+  // descartamos la migración pendiente para no aplicarla más tarde por error.
+  window._pendingGuestState = null;
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('appRoot').style.display = '';
+  window._appInit();
+}
+
+function doSignOut() {
+  flushCloudSave();
+  window._fbSignOut();
+  window._lastInitedUid = null;
+  // Reset to default state on sign out
+  state = defaultState();
+  document.getElementById('appRoot').style.display = 'none';
+  document.getElementById('authScreen').style.display = '';
+}
+
+// Allow pressing Enter in auth fields
+document.getElementById('authName').addEventListener('keydown',  e=>{ if(e.key==='Enter') document.getElementById('authEmail').focus(); });
+document.getElementById('authEmail').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('authPass').focus(); });
+document.getElementById('authPass').addEventListener('keydown',  e=>{ if(e.key==='Enter') submitAuth(); });
+function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function courses() { return state.cycles[state.currentCycle]?.courses || []; }
+function cycleData() { return state.cycles[state.currentCycle] || {}; }
+
+// ════════════════════════════════════════════════
+//  GRADE UTILS  — color rules:
+//  Individual eval notes + global ponderado → red/yellow/green
+//  Course avg + pond panel course vals → course color
+// ════════════════════════════════════════════════
+function gradeClass(n) {
+  if (n===null||n===''||n===undefined) return '';
+  const v=parseFloat(n);
+  if (v<11) return 'c-red';
+  if (v<15) return 'c-yellow';
+  return 'c-green';
+}
+function gradeHex(n) { // only for individual notes & global avg
+  if (n===null||n===''||n===undefined) return 'var(--muted)';
+  const v=parseFloat(n);
+  if (v<11) return 'var(--red)';
+  if (v<15) return 'var(--yellow)';
+  return 'var(--green)';
+}
+function gradeStatusClass(n) {
+  if (n===null) return '';
+  const v=parseFloat(n);
+  if (v<11) return 'red';
+  if (v<15) return 'yellow';
+  return 'green';
+}
+function gradeLabel(n) {
+  if (n===null) return '';
+  const v=parseFloat(n);
+  if (v<11) return 'Jalado';
+  if (v<15) return 'Regular';
+  return 'Aprobado';
+}
+
+// Average purely from evaluations (ignores manual override)
+function courseAvgFromEvals(c) {
+  let sum=0,w=0;
+  for (const e of c.evals) {
+    if (e.nota!==null&&e.nota!==''&&e.weight) {
+      sum+=parseFloat(e.nota)*parseFloat(e.weight);
+      w+=parseFloat(e.weight);
+    }
+  }
+  if (!w) return null;
+  return Math.round(sum/w);
+}
+// Course average — manual override (typed directly on the card) wins over evaluations
+function courseAvg(c) {
+  if (c.manualAvg!==null && c.manualAvg!==undefined && c.manualAvg!=='') {
+    return parseFloat(c.manualAvg);
+  }
+  return courseAvgFromEvals(c);
+}
+function setManualAvg(cid, val) {
+  const c = courses().find(c=>c.id===cid); if (!c) return;
+  if (val===''||val===null||val===undefined) { c.manualAvg = null; }
+  else {
+    const n = Math.round(parseFloat(val));
+    c.manualAvg = isNaN(n) ? null : Math.max(0, Math.min(20, n));
+  }
+  render();
+}
+// Forma explícita de salir del modo "Nota directa" y volver al modo Evaluaciones:
+// limpia la nota directa, lo que automáticamente reactiva las evaluaciones
+// (dejan de estar en "off") y hace que el promedio vuelva a calcularse con ellas.
+function clearManualAvg(cid) { setManualAvg(cid, ''); }
+
+// ── Weighted averages across the WHOLE career (all cycles/periods) ──
+function cycleSortVal(k) {
+  const m = k.match(/^(\d{4})-(\d)$/);
+  if (m) return parseInt(m[1])*10 + parseInt(m[2]);
+  return 0;
+}
+function sortedCycleKeys() {
+  return Object.keys(state.cycles).slice().sort((a,b)=>cycleSortVal(a)-cycleSortVal(b));
+}
+function allCoursesIn(cycleKeys) {
+  const out=[];
+  cycleKeys.forEach(k=>{ (state.cycles[k]?.courses||[]).forEach(c=>out.push(c)); });
+  return out;
+}
+function weightedAvgOf(courseList) {
+  let sum=0, wsum=0;
+  for (const c of courseList) {
+    const avg=courseAvg(c);
+    if (avg!==null && c.credits) { sum+=avg*c.credits; wsum+=c.credits; }
+  }
+  if (!wsum) return null;
+  return (sum/wsum).toFixed(2);
+}
+// Promedio ponderado general de toda la carrera
+function overallAvg() { return weightedAvgOf(allCoursesIn(Object.keys(state.cycles))); }
+// Promedio ponderado de los últimos 3 períodos académicos
+function last3PeriodsAvg() {
+  const keys = sortedCycleKeys().slice(-3);
+  return weightedAvgOf(allCoursesIn(keys));
+}
+// Promedio ponderado solo del ciclo activo (la pestaña seleccionada)
+function activeCycleAvg() {
+  return weightedAvgOf(courses());
+}
+
+// ════════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════════
+function render() { renderChips(); renderPond(); renderGrid(); if (state.currentView==='dashboard') renderDashboard(); saveState(); }
+
+// ════════════════════════════════════════════════
+//  VIEW TABS (Ciclo / Dashboard)
+// ════════════════════════════════════════════════
+function switchView(v) {
+  state.currentView = v;
+  document.getElementById('viewCiclo').style.display = v==='ciclo' ? '' : 'none';
+  document.getElementById('viewDashboard').style.display = v==='dashboard' ? '' : 'none';
+  // Everything below the dashboard/cycle buttons must always reflect whatever
+  // is currently selected, so re-render the ciclo-dependent sections (pond +
+  // course grid) every time the view or the active cycle changes — not just
+  // the chip row.
+  render();
+}
+
+// ════════════════════════════════════════════════
+//  DASHBOARD
+// ════════════════════════════════════════════════
+function lastAddedCycleKey() {
+  const keys = sortedCycleKeys();
+  return keys.length ? keys[keys.length-1] : state.currentCycle;
+}
+function mallaTotals() {
+  const malla = MALLAS[state.career];
+  if (!malla) return { credits: 200, courses: 60 };
+  let credits = 0, count = 0;
+  Object.values(malla.mallas).forEach(plan=>{
+    Object.values(plan).forEach(list=>{
+      list.forEach(c=>{ credits += (c.credits||0); count++; });
+    });
+  });
+  return { credits: credits || 200, courses: count || 60 };
+}
+function courseIsFinished(c) {
+  if (c.manualAvg!==null && c.manualAvg!==undefined && c.manualAvg!=='') return true;
+  const totalW = c.evals.reduce((s,e)=>s+(parseFloat(e.weight)||0),0);
+  const filledW = c.evals.reduce((s,e)=>s+((e.nota!==null&&e.nota!==''&&e.nota!==undefined)?(parseFloat(e.weight)||0):0),0);
+  return totalW>0 && filledW>=totalW;
+}
+function courseProjection(c) {
+  let filledW=0, filledSum=0, totalW=0;
+  c.evals.forEach(e=>{
+    const w = parseFloat(e.weight)||0;
+    totalW += w;
+    if (e.nota!==null && e.nota!=='' && e.nota!==undefined) { filledW += w; filledSum += parseFloat(e.nota)*w; }
+  });
+  const remaining = totalW - filledW;
+  if (remaining<=0 || filledW<=0) return null;
+  const projected = Math.round((filledSum/filledW)*100)/100;
+  const needed = Math.round(((11*totalW - filledSum)/remaining)*100)/100;
+  return { projected, needed };
+}
+function riskCourses() {
+  return allCoursesIn(Object.keys(state.cycles)).map(c=>({ c, avg: courseAvg(c) }))
+    .filter(o=>o.avg!==null && o.avg<11)
+    .sort((a,b)=>a.avg-b.avg);
+}
+function renderDashboard() {
+  const totals = mallaTotals();
+  const allCourses = allCoursesIn(Object.keys(state.cycles));
+  const creditsUsed = allCourses.reduce((s,c)=>s+(c.credits||0),0);
+  const coursesDone = allCourses.filter(c=>courseAvg(c)!==null).length;
+
+  // Mismo nombre que se muestra junto al icono de engranaje/perfil (userEmailLabel),
+  // para que el saludo del Dashboard siempre coincida con esa fuente de datos.
+  const helloName = window._currentUser ? (window._currentUser.displayName || window._currentUser.email) : '';
+
+  document.getElementById('viewDashboard').innerHTML = `
+    <div class="dash-hello">Hola${helloName?`, <b>${helloName}</b>`:''}</div>
+
+    <div class="dash-grid">
+      <div class="dash-stat">
+        <div class="dash-stat-label">Promedio ponderado</div>
+        <div class="dash-stat-val" style="color:${gradeHex(overallAvg())}">${overallAvg()??'—'}</div>
+      </div>
+      <div class="dash-stat">
+        <div class="dash-stat-label">Últimos 3</div>
+        <div class="dash-stat-val" style="color:${gradeHex(last3PeriodsAvg())}">${last3PeriodsAvg()??'—'}</div>
+      </div>
+      <div class="dash-stat">
+        <div class="dash-stat-label">Créditos</div>
+        <div class="dash-stat-val">${creditsUsed} / ${totals.credits}</div>
+      </div>
+      <div class="dash-stat">
+        <div class="dash-stat-label">Cursos</div>
+        <div class="dash-stat-val">${coursesDone} / ${totals.courses}</div>
+      </div>
+    </div>
+
+    <div class="dash-row2">
+      ${renderDashRendimiento()}
+      ${renderDashProjection()}
+    </div>
+
+    <div class="dash-card dash-evo-card">
+      <div class="dash-card-title">Evolución del promedio</div>
+      ${renderEvolutionSvg()}
+    </div>
+
+    <div class="dash-row2">
+      ${renderDashRisk()}
+      ${renderDashProgress(creditsUsed, totals.credits)}
+    </div>
+  `;
+}
+function renderDashRendimiento() {
+  const lastKey = lastAddedCycleKey();
+  const cs = (state.cycles[lastKey]?.courses) || [];
+  if (!cs.length) return `<div class="dash-card"><div class="dash-card-title">Rendimiento · ${lastKey||''}</div><div class="dash-empty">Aún no tienes cursos en ese ciclo.</div></div>`;
+  const rows = cs.map(c=>{
+    const avg = courseAvg(c);
+    const icon = avg===null ? '' : (avg<11?'⚠️':'✅');
+    return `<div class="dash-perf-row">
+      <div class="dash-perf-name">${c.name}</div>
+      <div class="dash-perf-val" style="color:${gradeHex(avg)}">${avg??'—'}</div>
+      <div class="dash-perf-icon">${icon}</div>
+    </div>`;
+  }).join('');
+  return `<div class="dash-card"><div class="dash-card-title">Rendimiento · ${lastKey||''}</div>${rows}</div>`;
+}
+function renderDashProjection() {
+  const lastKey = lastAddedCycleKey();
+  const cs = (state.cycles[lastKey]?.courses) || [];
+  if (!cs.length) {
+    return `<div class="dash-card"><div class="dash-card-title">¿Voy a aprobar?</div><div class="dash-empty">Aún no tienes cursos en ese ciclo.</div></div>`;
+  }
+  const rows = cs.map(c=>{
+    if (courseIsFinished(c)) {
+      const avg = courseAvg(c);
+      return `<div class="dash-perf-row">
+        <div class="dash-perf-name">${c.name}</div>
+        <div class="dash-perf-val" style="color:${gradeHex(avg)}">${avg??'—'}</div>
+        <div class="dash-perf-icon">✅</div>
+      </div>`;
+    }
+    const p = courseProjection(c);
+    const sub = p
+      ? (p.needed<=20 && p.needed>=0
+          ? `Proy. ${p.projected} · necesitas <b>${p.needed}</b>`
+          : `Proy. ${p.projected} · ya no puede aprobar`)
+      : `Sin notas aún`;
+    return `<div class="dash-perf-row" style="flex-direction:column;align-items:flex-start;gap:2px">
+      <div class="dash-perf-name">${c.name}</div>
+      <div class="dash-predict-sub" style="font-size:11px">${sub}</div>
+    </div>`;
+  }).join('');
+  return `<div class="dash-card"><div class="dash-card-title">¿Voy a aprobar? · ${lastKey||''}</div>${rows}</div>`;
+}
+function renderEvolutionSvg() {
+  const keys = sortedCycleKeys();
+  const pts = keys.map(k=>({ k, avg: weightedAvgOf(state.cycles[k].courses) })).filter(p=>p.avg!==null);
+  if (pts.length < 2) return `<div class="dash-empty">Necesitas al menos 2 ciclos con notas para ver la evolución.</div>`;
+  const w = 600, h = 140, pad = 24;
+  const xs = pts.map((_,i)=> pad + i*((w-2*pad)/(pts.length-1)));
+  const ys = pts.map(p=> h-pad - (Math.min(20,Math.max(0,parseFloat(p.avg)))/20)*(h-2*pad));
+  const path = xs.map((x,i)=>`${i===0?'M':'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+  const dots = xs.map((x,i)=>`<circle cx="${x.toFixed(1)}" cy="${ys[i].toFixed(1)}" r="4" fill="var(--accent)"/>`).join('');
+  const labels = xs.map((x,i)=>`<text x="${x.toFixed(1)}" y="${h-4}" font-size="9" fill="var(--muted)" text-anchor="middle">${pts[i].k}</text>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block">
+    <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${dots}${labels}
+  </svg>`;
+}
+function renderDashRisk() {
+  const risk = riskCourses();
+  if (!risk.length) return `<div class="dash-card"><div class="dash-card-title">Cursos en riesgo</div><div class="dash-empty">Ningún curso está desaprobado por ahora 🎉</div></div>`;
+  const rows = risk.map(o=>`<div class="dash-risk-item"><span>${o.c.name}</span><b style="color:${gradeHex(o.avg)}">${o.avg}</b></div>`).join('');
+  return `<div class="dash-card"><div class="dash-card-title">Cursos en riesgo</div>${rows}</div>`;
+}
+function renderDashProgress(used, total) {
+  const pct = total ? Math.min(100, Math.round(used/total*100)) : 0;
+  return `<div class="dash-card">
+    <div class="dash-card-title">Progreso de carrera</div>
+    <div class="dash-progress-pct">${pct}%</div>
+    <div class="dash-progress-bar"><div class="dash-progress-fill" style="width:${pct}%"></div></div>
+    <div class="dash-progress-label">${used} / ${total} créditos</div>
+  </div>`;
+}
+
+function renderChips() {
+  const container = document.getElementById('cycleChips');
+  const prevScroll = container ? container.scrollLeft : 0;
+  const keys = sortedCycleKeys();
+  const dashChip = `<button class="chip chip-dash ${state.currentView==='dashboard'?'active':''}" onclick="switchView('dashboard')">📊 Dashboard</button>`;
+  const chips = keys.map(k=>{
+    const isActive = state.currentView==='ciclo' && k===state.currentCycle;
+    return `<div class="chip-wrap deletable">
+      <button class="chip ${isActive?'active':''}" onclick="switchCycle('${k}')">${k}</button>
+      <button class="chip-del" onclick="deleteCycle('${k}')" title="Eliminar ciclo">×</button>
+    </div>`;
+  }).join('');
+  const addBtn = `<button class="chip-add-btn" onclick="openAddCycleWizard()" title="Nuevo ciclo">＋</button>`;
+  container.innerHTML = dashChip + chips + addBtn;
+  container.scrollLeft = prevScroll;
+}
+
+function renderPond() {
+  const g = overallAvg();
+  const l3 = last3PeriodsAvg();
+  const gv = document.getElementById('globalVal');
+  const gs = document.getElementById('globalStatus');
+  const gb = document.getElementById('globalBar');
+  gv.textContent = g!==null ? g : '—';
+  // Global val uses grade color (red/yellow/green)
+  gv.style.color = g!==null ? gradeHex(g) : 'var(--sub)';
+  if (g!==null) {
+    const sc=gradeStatusClass(g);
+    gs.textContent=gradeLabel(g); gs.className='pond-status '+sc;
+    gb.style.width=Math.min(100,parseFloat(g)/20*100)+'%';
+    gb.style.background=gradeHex(g);
+  } else { gs.textContent=''; gb.style.width='0%'; }
+
+  const l3v = document.getElementById('last3Val');
+  l3v.textContent = l3!==null ? l3 : '—';
+  l3v.style.color = l3!==null ? gradeHex(l3) : 'var(--sub)';
+
+  const ac = activeCycleAvg();
+  const acv = document.getElementById('activeCycleVal');
+  acv.textContent = ac!==null ? ac : '—';
+  acv.style.color = ac!==null ? gradeHex(ac) : 'var(--sub)';
+
+  // Credits display
+  const cd = cycleData();
+  const totalC = cd.totalCredits || '?';
+  const usedC = courses().reduce((s,c)=>s+(c.credits||0),0);
+  document.getElementById('pondCreditsDisplay').textContent = `${usedC} / ${totalC} créditos`;
+
+  // Course items in pond — use COURSE COLOR for avg value
+  document.getElementById('pondCourses').innerHTML = courses().map(c=>{
+    const avg=courseAvg(c);
+    const credPct = cd.totalCredits ? Math.round((c.credits||0)/cd.totalCredits*100) : null;
+    return `
+      <div class="pond-course-item" onclick="openColorPickerFor('${c.id}')">
+        <div class="pond-course-dot" style="background:${c.color}"></div>
+        <div class="pond-course-name">${c.name}</div>
+        <div class="pond-course-val" style="color:${c.color}">${avg!==null?avg:'—'}</div>
+        ${credPct!==null?`<div class="pond-course-credits">${c.credits||0}cr · ${credPct}%</div>`:''}
+      </div>`;
+  }).join('');
+}
+
+function renderGrid() {
+  const grid = document.getElementById('coursesGrid');
+  grid.innerHTML = '';
+  const cs = courses();
+  // Si el ciclo mezcla cursos de distintos ciclos de la malla (ruta personalizada),
+  // mostramos junto al nombre a qué ciclo pertenece realmente cada curso.
+  const distinctCiclos = new Set(cs.filter(c=>c.mallaCiclo!=null).map(c=>c.mallaCiclo));
+  const showCicloTag = distinctCiclos.size > 1;
+
+  cs.forEach((c, idx) => {
+    const isManual = c.manualAvg!==null && c.manualAvg!==undefined && c.manualAvg!=='';
+    const computedAvg = courseAvgFromEvals(c);
+    const totalW = c.evals.reduce((s,e)=>s+(parseFloat(e.weight)||0),0);
+    const partial = c.evals.reduce((s,e)=>{
+      if(e.nota!==null&&e.nota!==''&&e.weight) return s+parseFloat(e.nota)*parseFloat(e.weight);
+      return s;
+    },0).toFixed(2);
+    const cd = cycleData();
+    const credPct = cd.totalCredits ? Math.round((c.credits||0)/cd.totalCredits*100) : null;
+
+    const rows = c.evals.map((ev, ei)=>{
+      const nota = ev.nota!==null&&ev.nota!==undefined ? ev.nota : '';
+      const partSc = (nota!==''&&ev.weight) ? (parseFloat(nota)*parseFloat(ev.weight)).toFixed(1) : '—';
+      return `
+        <div class="eval-row">
+          <div class="eval-row-order-btns">
+            <button class="eval-row-order-btn" onclick="moveEval('${c.id}',${ei},-1)" ${ei===0?'disabled':''}>▲</button>
+            <button class="eval-row-order-btn" onclick="moveEval('${c.id}',${ei},1)" ${ei===c.evals.length-1?'disabled':''}>▼</button>
+          </div>
+          <div class="eval-name-col">
+            <div class="eval-name">${ev.name}</div>
+            <div class="eval-meta">${ev.week?'Sem. '+ev.week:''}${ev.week&&ev.weight?' · ':''}${Math.round(ev.weight*100)}%</div>
+          </div>
+          <div class="nota-wrap">
+            <div class="nota-label">Nota</div>
+            <input class="nota-input ${gradeClass(nota)}${!ev.given?' c-pred':''}"
+              type="number" inputmode="numeric" min="0" max="20" step="1" value="${nota}"
+              onkeydown="if(['.',',','e','E','+','-'].includes(event.key))event.preventDefault()"
+              oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+              onchange="updateNota('${c.id}','${ev.id}',this.value)">
+          </div>
+          <div class="toggle-wrap">
+            <div class="toggle-label">${ev.given?'Dada':'Pred.'}</div>
+            <label class="toggle">
+              <input type="checkbox" ${ev.given?'checked':''} onchange="toggleGiven('${c.id}','${ev.id}',this.checked)">
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+          <div class="partial-col">${partSc}</div>
+        </div>`;
+    }).join('');
+
+    const card = document.createElement('div');
+    card.className = 'course-card';
+    card.dataset.id = c.id;
+    card.draggable = true;
+    // Card avg uses COURSE COLOR (not grade color)
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="drag-handle" title="Arrastrar para reordenar">⠿</div>
+        <div class="card-color-dot" style="background:${c.color}" onclick="openColorPickerFor('${c.id}')"></div>
+        <div class="card-title" style="color:${c.color}">${c.name}${showCicloTag && c.mallaCiclo!=null?` <span style="font-size:10px;font-weight:600;color:var(--muted)">(ciclo ${c.mallaCiclo})</span>`:''}</div>
+        <input class="card-avg-input" style="color:${c.color}" type="number" inputmode="numeric" min="0" max="20" step="1"
+          value="${isManual?c.manualAvg:(computedAvg!==null?computedAvg:'')}" placeholder="—"
+          title="Puedes escribir la nota promedio directamente (solo números enteros)"
+          onkeydown="if(['.',',','e','E','+','-'].includes(event.key))event.preventDefault()"
+          oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+          onchange="setManualAvg('${c.id}',this.value)">
+        ${isManual?`<button class="avg-clear-btn" onclick="clearManualAvg('${c.id}')" title="Quitar nota directa y volver a modo evaluaciones">✕</button>`:''}
+        <div class="card-order-btns">
+          <button class="order-btn" onclick="moveCourse('${c.id}',-1)" ${idx===0?'disabled':''} title="Subir">▲</button>
+          <button class="order-btn" onclick="moveCourse('${c.id}',1)" ${idx===cs.length-1?'disabled':''} title="Bajar">▼</button>
+        </div>
+        <button class="card-edit-btn" onclick="openEditSheet('${c.id}')">✎</button>
+      </div>
+      ${isManual?`<div style="padding:6px 14px;font-size:10px;color:var(--muted);font-weight:600">Nota puesta manualmente · las evaluaciones de abajo están desactivadas</div>`:''}
+      <div class="eval-list${isManual?' evals-disabled':''}">${rows || (!isManual?'<div style="padding:14px;font-size:11px;color:var(--muted);text-align:center">Sin evaluaciones — añade una con ✎ o escribe la nota final arriba</div>':'')}</div>
+      <div class="card-footer">
+        <span class="card-footer-label">Ponderado acumulado</span>
+        <div class="card-footer-right">
+          <span class="card-footer-val" style="color:${c.color}">${partial} / ${(totalW*20).toFixed(0)}</span>
+          ${c.credits?`<span class="card-footer-credits">${c.credits} crédito${c.credits!==1?'s':''}${credPct!==null?' · '+credPct+'% del ciclo':''}</span>`:''}
+        </div>
+      </div>`;
+
+    // Drag events
+    card.addEventListener('dragstart', onDragStart);
+    card.addEventListener('dragover',  onDragOver);
+    card.addEventListener('dragleave', onDragLeave);
+    card.addEventListener('drop',      onDrop);
+    card.addEventListener('dragend',   onDragEnd);
+    // Touch drag
+    card.querySelector('.drag-handle').addEventListener('touchstart', onTouchStart, {passive:false});
+
+    grid.appendChild(card);
+  });
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-course-btn';
+  addBtn.innerHTML = '＋ Añadir curso';
+  addBtn.onclick = openAddCourseSheet;
+  grid.appendChild(addBtn);
+}
+
+// ════════════════════════════════════════════════
+//  REORDER — Arrow buttons
+// ════════════════════════════════════════════════
+function moveCourse(cid, dir) {
+  const cs = courses();
+  const idx = cs.findIndex(c=>c.id===cid);
+  if (idx<0) return;
+  const newIdx = idx+dir;
+  if (newIdx<0||newIdx>=cs.length) return;
+  [cs[idx],cs[newIdx]] = [cs[newIdx],cs[idx]];
+  render();
+}
+
+// ════════════════════════════════════════════════
+//  REORDER — Drag & Drop (desktop)
+// ════════════════════════════════════════════════
+let dragSrcId = null;
+
+function onDragStart(e) {
+  dragSrcId = e.currentTarget.dataset.id;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const card = e.currentTarget;
+  if (card.dataset.id !== dragSrcId) card.classList.add('drag-over');
+}
+function onDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function onDrop(e) {
+  e.preventDefault();
+  const targetId = e.currentTarget.dataset.id;
+  e.currentTarget.classList.remove('drag-over');
+  if (!dragSrcId||dragSrcId===targetId) return;
+  const cs = courses();
+  const from = cs.findIndex(c=>c.id===dragSrcId);
+  const to   = cs.findIndex(c=>c.id===targetId);
+  if (from<0||to<0) return;
+  const [moved] = cs.splice(from,1);
+  cs.splice(to,0,moved);
+  render();
+}
+function onDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.course-card').forEach(c=>c.classList.remove('drag-over'));
+  dragSrcId = null;
+}
+
+// ════════════════════════════════════════════════
+//  REORDER — Touch drag (Android)
+// ════════════════════════════════════════════════
+let touchDragId = null, touchClone = null, touchOffY = 0;
+
+function onTouchStart(e) {
+  if (e.touches.length!==1) return;
+  e.preventDefault();
+  const handle = e.currentTarget;
+  const card = handle.closest('.course-card');
+  touchDragId = card.dataset.id;
+
+  const rect = card.getBoundingClientRect();
+  touchOffY = e.touches[0].clientY - rect.top;
+
+  // Clone for visual feedback
+  touchClone = card.cloneNode(true);
+  touchClone.style.cssText = `
+    position:fixed; left:${rect.left}px; top:${rect.top}px;
+    width:${rect.width}px; z-index:999; opacity:0.9; pointer-events:none;
+    transform:scale(1.02); box-shadow:0 8px 32px rgba(0,0,0,0.5);
+    border-radius:16px; transition:none;
+  `;
+  document.body.appendChild(touchClone);
+  card.style.opacity = '0.3';
+
+  document.addEventListener('touchmove', onTouchMove, {passive:false});
+  document.addEventListener('touchend',  onTouchEnd);
+}
+
+function onTouchMove(e) {
+  if (!touchClone) return;
+  e.preventDefault();
+  const y = e.touches[0].clientY;
+  const x = e.touches[0].clientX;
+  touchClone.style.top = (y - touchOffY) + 'px';
+
+  // Find card under touch point (excluding clone)
+  touchClone.style.display = 'none';
+  const el = document.elementFromPoint(x, y);
+  touchClone.style.display = '';
+  const target = el?.closest('.course-card');
+  document.querySelectorAll('.course-card').forEach(c=>c.classList.remove('drag-over'));
+  if (target && target.dataset.id && target.dataset.id!==touchDragId) {
+    target.classList.add('drag-over');
+  }
+}
+
+function onTouchEnd(e) {
+  document.removeEventListener('touchmove', onTouchMove);
+  document.removeEventListener('touchend',  onTouchEnd);
+
+  // Find drop target
+  const x = e.changedTouches[0].clientX;
+  const y = e.changedTouches[0].clientY;
+  if (touchClone) { touchClone.style.display='none'; }
+  const el = document.elementFromPoint(x,y);
+  if (touchClone) { touchClone.style.display=''; }
+  const target = el?.closest('.course-card');
+
+  if (target && target.dataset.id && target.dataset.id!==touchDragId) {
+    const cs = courses();
+    const from = cs.findIndex(c=>c.id===touchDragId);
+    const to   = cs.findIndex(c=>c.id===target.dataset.id);
+    if (from>=0&&to>=0) {
+      const [moved]=cs.splice(from,1);
+      cs.splice(to,0,moved);
+    }
+  }
+
+  if (touchClone) { touchClone.remove(); touchClone=null; }
+  document.querySelectorAll('.course-card').forEach(c=>{
+    c.classList.remove('drag-over');
+    c.style.opacity='';
+  });
+  touchDragId = null;
+  render();
+}
+
+// ════════════════════════════════════════════════
+//  ACTIONS
+// ════════════════════════════════════════════════
+// ════════════════════════════════════════════════
+//  CONFIRM HELPER
+// ════════════════════════════════════════════════
+function showConfirm(msg, onOk) {
+  document.getElementById('confirmMsg').textContent = msg;
+  const btn = document.getElementById('confirmOkBtn');
+  btn.onclick = () => { closeSheet('confirmSheet'); onOk(); };
+  openSheet('confirmSheet');
+}
+
+function switchCycle(name) { state.currentCycle=name; switchView('ciclo'); }
+function deleteCycle(name) {
+  showConfirm(`¿Eliminar el ciclo "${name}" y todos sus cursos?`, ()=>{
+    delete state.cycles[name];
+    if(state.currentCycle===name) state.currentCycle=Object.keys(state.cycles)[0]||null;
+    render();
+  });
+}
+function moveEval(cid, idx, dir) {
+  const c=courses().find(c=>c.id===cid); if(!c)return;
+  const j=idx+dir;
+  if(j<0||j>=c.evals.length)return;
+  [c.evals[idx],c.evals[j]]=[c.evals[j],c.evals[idx]];
+  render();
+}
+function updateNota(cid,eid,val) {
+  const c=courses().find(c=>c.id===cid); if(!c)return;
+  const e=c.evals.find(e=>e.id===eid); if(!e)return;
+  const n=Math.round(parseFloat(val)); e.nota=isNaN(n)?null:Math.min(20,Math.max(0,n));
+  render();
+}
+function toggleGiven(cid,eid,checked) {
+  const c=courses().find(c=>c.id===cid); if(!c)return;
+  const e=c.evals.find(e=>e.id===eid); if(!e)return;
+  e.given=checked; render();
+}
+
+// ════════════════════════════════════════════════
+//  COLOR PICKER
+// ════════════════════════════════════════════════
+let colorTarget=null;
+function openColorPickerFor(cid) {
+  colorTarget=cid;
+  const c=courses().find(c=>c.id===cid);
+  document.getElementById('colorGrid').innerHTML=PALETTE.map(hex=>
+    `<div class="cswatch ${c&&c.color===hex?'selected':''}" style="background:${hex}" onclick="applyColor('${hex}')"></div>`
+  ).join('');
+  openSheet('colorSheet');
+}
+function applyColor(hex) {
+  if(!colorTarget)return;
+  const c=courses().find(c=>c.id===colorTarget);
+  if(c) c.color=hex;
+  colorTarget=null; closeSheet('colorSheet'); render();
+}
+
+// ════════════════════════════════════════════════
+//  EDIT SHEET
+// ════════════════════════════════════════════════
+let editingId=null, editEvs=[];
+function openEditSheet(cid) {
+  editingId=cid;
+  const c=courses().find(c=>c.id===cid); if(!c)return;
+  document.getElementById('editSheetTitle').textContent=c.name;
+  document.getElementById('editCourseName').value=c.name;
+  document.getElementById('editCourseCredits').value=c.credits||0;
+  editEvs=c.evals.map(e=>({...e}));
+  renderEditEvRows();
+  document.getElementById('deleteBtn').onclick=()=>{
+    showConfirm(`¿Eliminar el curso "${courses().find(c=>c.id===editingId)?.name}"?`, ()=>{
+      const cycle = state.cycles[state.currentCycle];
+      cycle.courses = cycle.courses.filter(c=>c.id!==editingId);
+      // Ajusta automáticamente el total de créditos del ciclo al nuevo máximo
+      // según los cursos que quedan (para que los % sigan siendo correctos)
+      cycle.totalCredits = cycle.courses.reduce((s,c)=>s+(c.credits||0),0);
+      closeSheet('editSheet'); render();
+    });
+  };
+  openSheet('editSheet');
+}
+function renderEditEvRows() {
+  const n=editEvs.length;
+  const container = document.getElementById('editEvalRows');
+  container.innerHTML=editEvs.map((e,i)=>`
+    <div class="eval-editor-row" data-ei="${i}" draggable="true">
+      <div class="eval-order-btns" style="cursor:grab;touch-action:none" data-drag-handle>
+        <button class="eval-order-btn" ${i===0?'disabled':''} onclick="moveEditEv(${i},-1)">▲</button>
+        <button class="eval-order-btn" ${i===n-1?'disabled':''} onclick="moveEditEv(${i},1)">▼</button>
+      </div>
+      <input class="mini-inp name-inp" value="${e.name}" placeholder="Nombre" oninput="editEvs[${i}].name=this.value">
+      <input class="mini-inp" type="number" inputmode="numeric" value="${e.week??''}" placeholder="—" min="1" max="18"
+        oninput="editEvs[${i}].week=this.value?parseInt(this.value):null">
+      <input class="mini-inp" type="number" inputmode="numeric" value="${Math.round((e.weight||0)*100)}" placeholder="%" min="0" max="100"
+        oninput="editEvs[${i}].weight=parseFloat(this.value)/100||0;updEditW()">
+      <input class="mini-inp" type="number" inputmode="numeric" value="${e.nota??''}" placeholder="—" min="0" max="20"
+        oninput="editEvs[${i}].nota=this.value!==''?parseFloat(this.value):null">
+      <button class="rm-eval-btn" onclick="editEvs.splice(${i},1);renderEditEvRows()">×</button>
+    </div>`).join('');
+
+  // Desktop drag
+  let dragEi=null;
+  container.querySelectorAll('.eval-editor-row').forEach(row=>{
+    row.addEventListener('dragstart', e=>{ dragEi=parseInt(row.dataset.ei); row.style.opacity='0.4'; e.dataTransfer.effectAllowed='move'; });
+    row.addEventListener('dragend', ()=>{ row.style.opacity=''; dragEi=null; });
+    row.addEventListener('dragover', e=>{ e.preventDefault(); row.style.background='var(--s3)'; });
+    row.addEventListener('dragleave', ()=>{ row.style.background=''; });
+    row.addEventListener('drop', e=>{ e.preventDefault(); row.style.background=''; const ti=parseInt(row.dataset.ei); if(dragEi!==null&&dragEi!==ti){const [m]=editEvs.splice(dragEi,1);editEvs.splice(ti,0,m);renderEditEvRows();} });
+  });
+
+  // Touch drag
+  let tEi=null, tClone=null, tOffY=0;
+  container.querySelectorAll('[data-drag-handle]').forEach(handle=>{
+    handle.addEventListener('touchstart', e=>{
+      if(e.touches.length!==1)return;
+      e.preventDefault();
+      const row=handle.closest('.eval-editor-row');
+      tEi=parseInt(row.dataset.ei);
+      const rect=row.getBoundingClientRect();
+      tOffY=e.touches[0].clientY-rect.top;
+      tClone=row.cloneNode(true);
+      tClone.style.cssText=`position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;z-index:9999;opacity:0.9;pointer-events:none;transform:scale(1.02);box-shadow:0 4px 20px rgba(0,0,0,0.5);border-radius:8px;background:var(--s3);`;
+      document.body.appendChild(tClone);
+      row.style.opacity='0.3';
+      const onMove=ev=>{
+        ev.preventDefault();
+        tClone.style.top=(ev.touches[0].clientY-tOffY)+'px';
+        tClone.style.display='none';
+        const el=document.elementFromPoint(ev.touches[0].clientX,ev.touches[0].clientY);
+        tClone.style.display='';
+        container.querySelectorAll('.eval-editor-row').forEach(r=>r.style.background='');
+        const tr=el?.closest('.eval-editor-row');
+        if(tr&&tr.dataset.ei!==String(tEi)) tr.style.background='var(--s3)';
+      };
+      const onEnd=ev=>{
+        document.removeEventListener('touchmove',onMove);
+        document.removeEventListener('touchend',onEnd);
+        tClone.style.display='none';
+        const el=document.elementFromPoint(ev.changedTouches[0].clientX,ev.changedTouches[0].clientY);
+        tClone.remove(); tClone=null;
+        container.querySelectorAll('.eval-editor-row').forEach(r=>{r.style.background='';r.style.opacity='';});
+        const tr=el?.closest('.eval-editor-row');
+        const ti=tr?parseInt(tr.dataset.ei):null;
+        if(ti!==null&&ti!==tEi){const[m]=editEvs.splice(tEi,1);editEvs.splice(ti,0,m);}
+        tEi=null; renderEditEvRows();
+      };
+      document.addEventListener('touchmove',onMove,{passive:false});
+      document.addEventListener('touchend',onEnd);
+    },{passive:false});
+  });
+  updEditW();
+}
+function moveEditEv(i,dir) {
+  const j=i+dir;
+  if(j<0||j>=editEvs.length)return;
+  [editEvs[i],editEvs[j]]=[editEvs[j],editEvs[i]];
+  renderEditEvRows();
+}
+function addEditEvalRow() { editEvs.push({id:uid(),name:'',week:null,weight:0,nota:null,given:false}); renderEditEvRows(); }
+function updEditW() {
+  const t=editEvs.reduce((s,e)=>s+(parseFloat(e.weight)||0),0);
+  const p=Math.round(t*100), el=document.getElementById('editWeightInd');
+  el.textContent=`Pesos: ${p}%`;
+  el.className='weight-indicator '+(p===100?'wi-ok':p>100?'wi-err':'wi-warn');
+}
+function saveEdit() {
+  const c=courses().find(c=>c.id===editingId); if(!c)return;
+  c.name=document.getElementById('editCourseName').value.trim().toUpperCase()||c.name;
+  c.credits=parseInt(document.getElementById('editCourseCredits').value)||0;
+  c.evals=editEvs;
+  closeSheet('editSheet'); render();
+}
+
+// ════════════════════════════════════════════════
+//  ADD COURSE
+// ════════════════════════════════════════════════
+let newEvs=[];
+function openAddCourseSheet() {
+  newEvs=[{id:uid(),name:'',week:null,weight:0,nota:null,given:false}];
+  const nameInp = document.getElementById('newCourseName');
+  nameInp.value = '';
+  const hint = document.getElementById('manualCourseHint');
+  if (state.career) {
+    // Default path: pick from the malla so name + credits are filled in automatically
+    nameInp.readOnly = true;
+    nameInp.placeholder = 'Toca para elegir un curso de la malla';
+    nameInp.onclick = openCoursePickerForAdd;
+    // Blank cycles must select courses exclusively from the malla — no manual entry
+    hint.style.display = cycleData().blank ? 'none' : '';
+  } else {
+    // No career configured yet — nothing to pick from, allow free typing
+    nameInp.readOnly = false;
+    nameInp.placeholder = 'ej. FÍSICA I';
+    nameInp.onclick = null;
+    hint.style.display = 'none';
+  }
+  document.getElementById('newCourseCredits').value='';
+  renderAddEvRows();
+  openSheet('addCourseSheet');
+}
+function useManualCourseEntry() {
+  const nameInp = document.getElementById('newCourseName');
+  nameInp.readOnly = false;
+  nameInp.value = '';
+  nameInp.placeholder = 'ej. FÍSICA I';
+  nameInp.onclick = null;
+  document.getElementById('manualCourseHint').style.display = 'none';
+  nameInp.focus();
+}
+
+// ── Course picker (malla, grouped by ciclo — same UI as the "Personalizado" cycle wizard) ──
+let coursePickerState = { openAcc: {} };
+function openCoursePickerForAdd() {
+  if (!state.career) { closeSheet('addCourseSheet'); openCareerSheet(false); return; }
+  coursePickerState = { openAcc: {} };
+  renderCoursePicker();
+  openSheet('pickCourseSheet');
+}
+function renderCoursePicker(restoreScroll) {
+  const ciclos = mallaCiclos(state.career, cycleData().malla || state.malla || '2026');
+  const already = new Set(courses().map(c=>c.name));
+  document.getElementById('pickCourseBody').innerHTML = `
+    <div id="pickAccordion" class="wizard-scroll-list">
+      ${Object.keys(ciclos).map(k=>{
+        const n = parseInt(k);
+        const list = ciclos[n];
+        const isOpen = !!coursePickerState.openAcc[n];
+        return `
+        <div class="ciclo-accordion">
+          <div class="ciclo-acc-head" onclick="togglePickAcc(${n})">
+            <span class="ciclo-acc-title">Ciclo ${n}</span>
+            <span class="ciclo-acc-arrow ${isOpen?'open':''}">▶</span>
+          </div>
+          <div class="ciclo-acc-body ${isOpen?'open':''}">
+            ${list.map(c=>{
+              const taken = already.has(c.name);
+              return `<button type="button" class="course-check-row" style="width:100%;background:none;border:none;font-family:inherit;text-align:left;cursor:${taken?'default':'pointer'};opacity:${taken?0.4:1}"
+                ${taken?'disabled':`onclick="pickCourseFromMalla('${c.name.replace(/'/g,"\\'")}',${c.credits})"`}>
+                <div class="course-check-name">${c.name}${taken?' · ya en el ciclo':''}</div>
+                <div class="course-check-credits">${c.credits} cr.</div>
+              </button>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+  if (restoreScroll) document.getElementById('pickAccordion').scrollTop = restoreScroll;
+}
+function togglePickAcc(n) {
+  coursePickerState.openAcc[n] = !coursePickerState.openAcc[n];
+  const prevScroll = document.getElementById('pickAccordion')?.scrollTop || 0;
+  renderCoursePicker(prevScroll);
+}
+function pickCourseFromMalla(name, credits) {
+  if (name === 'ELECTIVO') { renderElectivoPickForAdd(); return; }
+  applyPickedCourse(name, credits);
+}
+function renderElectivoPickForAdd() {
+  const list = (MALLAS[state.career].electivos) || [];
+  document.getElementById('pickCourseBody').innerHTML = `
+    <button class="wizard-back-link" onclick="renderCoursePicker()">‹ Atrás</button>
+    <div class="wizard-step-label">Elige tu electivo</div>
+    <div class="wizard-scroll-list">
+      ${list.map(name=>`
+        <button type="button" class="course-check-row" style="width:100%;background:none;border:none;font-family:inherit;text-align:left;cursor:pointer" onclick="applyPickedCourse('${name.replace(/'/g,"\\'")}',3)">
+          <div class="course-check-name">${name}</div>
+        </button>`).join('')}
+    </div>
+  `;
+}
+function applyPickedCourse(name, credits) {
+  document.getElementById('newCourseName').value = name;
+  document.getElementById('newCourseCredits').value = credits;
+  closeSheet('pickCourseSheet');
+}
+function renderAddEvRows() {
+  const n=newEvs.length;
+  document.getElementById('addEvalRows').innerHTML=newEvs.map((e,i)=>`
+    <div class="eval-editor-row">
+      <div class="eval-order-btns">
+        <button class="eval-order-btn" ${i===0?'disabled':''} onclick="moveNewEv(${i},-1)">▲</button>
+        <button class="eval-order-btn" ${i===n-1?'disabled':''} onclick="moveNewEv(${i},1)">▼</button>
+      </div>
+      <input class="mini-inp name-inp" value="${e.name}" placeholder="Nombre" oninput="newEvs[${i}].name=this.value">
+      <input class="mini-inp" type="number" inputmode="numeric" value="${e.week??''}" placeholder="—" min="1" max="18"
+        oninput="newEvs[${i}].week=this.value?parseInt(this.value):null">
+      <input class="mini-inp" type="number" inputmode="numeric" value="${Math.round((e.weight||0)*100)}" placeholder="%" min="0" max="100"
+        oninput="newEvs[${i}].weight=parseFloat(this.value)/100||0;updAddW()">
+      <input class="mini-inp" type="number" inputmode="numeric" value="${e.nota??''}" placeholder="—" min="0" max="20"
+        oninput="newEvs[${i}].nota=this.value!==''?parseFloat(this.value):null">
+      <button class="rm-eval-btn" onclick="newEvs.splice(${i},1);renderAddEvRows()">×</button>
+    </div>`).join('');
+  updAddW();
+}
+function moveNewEv(i,dir) {
+  const j=i+dir;
+  if(j<0||j>=newEvs.length)return;
+  [newEvs[i],newEvs[j]]=[newEvs[j],newEvs[i]];
+  renderAddEvRows();
+}
+function addNewEvalRow() { newEvs.push({id:uid(),name:'',week:null,weight:0,nota:null,given:false}); renderAddEvRows(); }
+function updAddW() {
+  const t=newEvs.reduce((s,e)=>s+(parseFloat(e.weight)||0),0);
+  const p=Math.round(t*100), el=document.getElementById('addWeightInd');
+  el.textContent=`Pesos: ${p}%`;
+  el.className='weight-indicator '+(p===100?'wi-ok':p>100?'wi-err':'wi-warn');
+}
+function saveNewCourse() {
+  const name=document.getElementById('newCourseName').value.trim();
+  if(!name){document.getElementById('newCourseName').focus();return;}
+  const cs=courses();
+  const color=PALETTE[cs.length%PALETTE.length];
+  const creds=parseInt(document.getElementById('newCourseCredits').value)||0;
+  const cycle = state.cycles[state.currentCycle];
+  cycle.courses.push({id:uid(),name:name.toUpperCase(),color,credits:creds,evals:newEvs.map(e=>({...e}))});
+  // Ciclos en blanco no tienen un total de créditos definido por una malla:
+  // se recalcula automáticamente según los cursos que tiene el ciclo.
+  if (cycle.blank) cycle.totalCredits = cycle.courses.reduce((s,c)=>s+(c.credits||0),0);
+  closeSheet('addCourseSheet'); render();
+}
+
+// ════════════════════════════════════════════════
+//  CAREER / MALLA SETUP
+// ════════════════════════════════════════════════
+function openCareerSheet(isFirstTime) {
+  careerWizard = { firstTime: !!isFirstTime };
+  renderCareerStep1();
+  openSheet('careerSheet');
+}
+
+function renderCareerStep1() {
+  document.getElementById('careerSheetTitle').textContent = 'Elige tu carrera';
+  const cur = state.career;
+  document.getElementById('careerBody').innerHTML = `
+    <div class="wizard-step-label">Carrera</div>
+    <div class="career-grid">
+      ${Object.keys(MALLAS).map(k=>`
+        <button class="career-opt" onclick="selectCareer('${k}')" style="${cur===k?'border-color:var(--accent)':''}">
+          <div class="career-opt-name">${MALLAS[k].label}</div>
+          <div class="career-opt-sub">Malla 2026 · 10 ciclos</div>
+        </button>`).join('')}
+    </div>
+    <p style="color:var(--muted);font-size:11px;line-height:1.5;margin-top:4px">
+      Con esto podremos recomendarte los cursos de cada ciclo. Podrás cambiarla luego desde ⚙️ Configuración.
+    </p>
+  `;
+  document.getElementById('careerActions').innerHTML = careerWizard.firstTime
+    ? `<button class="btn" onclick="skipCareerSetup()">Configurar después</button>`
+    : `<button class="btn" onclick="closeSheet('careerSheet')">Cerrar</button>`;
+}
+
+function selectCareer(key) {
+  state.career = key;
+  state.malla = '2026';
+  saveState();
+  closeSheet('careerSheet');
+}
+
+function skipCareerSetup() {
+  state.career = null; // remembers that the user chose to skip, so we don't ask again
+  saveState();
+  closeSheet('careerSheet');
+}
+
+// ════════════════════════════════════════════════
+//  NEW CYCLE WIZARD
+// ════════════════════════════════════════════════
+let careerWizard = {};
+let newCycleWizard = {};
+
+function openAddCycleWizard() {
+  const guess = nextYearPeriodGuess();
+  newCycleWizard = { year: guess.year, period: guess.period, mode: null, ciclo: null, checked: {} };
+  renderWizardName();
+  openSheet('addCycleSheet');
+}
+
+function nextYearPeriodGuess() {
+  const keys = sortedCycleKeys();
+  if (!keys.length) return { year: 2026, period: 2 };
+  const last = keys[keys.length-1];
+  const m = last.match(/^(\d{4})-(\d)$/);
+  if (!m) return { year: 2026, period: 2 };
+  let year = parseInt(m[1]), period = parseInt(m[2]);
+  period++; if (period>2) { period=0; year++; }
+  return { year, period };
+}
+
+function renderWizardName() {
+  document.getElementById('addCycleTitle').textContent = 'Nuevo ciclo';
+  document.getElementById('addCycleBody').innerHTML = `
+    <div class="field-label">Año</div>
+    <div class="year-stepper">
+      <button class="stepper-btn" onclick="wizardYearStep(-1)">−</button>
+      <div class="year-stepper-val">${newCycleWizard.year}</div>
+      <button class="stepper-btn" onclick="wizardYearStep(1)">+</button>
+    </div>
+    <div class="field-label" style="margin-top:16px">Periodo académico</div>
+    <div class="ciclo-chip-row">
+      ${[0,1,2].map(p=>`<button class="ciclo-chip ${newCycleWizard.period===p?'active':''}" onclick="wizardSetPeriod(${p})">${p}</button>`).join('')}
+    </div>
+    <div style="margin-top:16px;color:var(--sub);font-size:13px">
+      Ciclo a crear: <strong style="color:var(--text)">${newCycleWizard.year}-${newCycleWizard.period}</strong>
+    </div>
+    <div id="wizardNameErr" style="color:var(--red);font-size:12px;margin-top:8px"></div>
+  `;
+  document.getElementById('addCycleActions').innerHTML = `
+    <button class="btn" onclick="closeSheet('addCycleSheet')">Cancelar</button>
+    <button class="btn btn-accent" onclick="wizardGoToMode()">Siguiente</button>
+  `;
+}
+function wizardYearStep(d) { newCycleWizard.year = Math.max(2000, newCycleWizard.year + d); renderWizardName(); }
+function wizardSetPeriod(p) { newCycleWizard.period = p; renderWizardName(); }
+
+function wizardGoToMode() {
+  const name = `${newCycleWizard.year}-${newCycleWizard.period}`;
+  if (state.cycles[name]) {
+    document.getElementById('wizardNameErr').textContent = 'Ese ciclo ya existe. Elige otro año o periodo.';
+    return;
+  }
+  newCycleWizard.name = name;
+  renderWizardMode();
+}
+
+function renderWizardMode() {
+  document.getElementById('addCycleTitle').textContent = newCycleWizard.name;
+  const hasCareer = !!state.career;
+  document.getElementById('addCycleBody').innerHTML = `
+    <button class="wizard-back-link" onclick="renderWizardName()">‹ Atrás</button>
+    <div class="wizard-step-label">¿Cómo quieres armar este ciclo?</div>
+    <div class="mode-grid">
+      ${hasCareer ? `
+      <button class="mode-opt" onclick="wizardStartClasica()">
+        <div class="mode-opt-name">🎯 Ruta clásica</div>
+        <div class="mode-opt-sub">Eliges el ciclo de tu malla (${MALLAS[state.career].label}) y se cargan sus cursos automáticamente. Puedes quitar los que no lleves.</div>
+      </button>
+      <button class="mode-opt" onclick="wizardStartPersonalizado()">
+        <div class="mode-opt-name">🧩 Personalizado</div>
+        <div class="mode-opt-sub">Buscas ciclo por ciclo de la malla y eliges tus propios cursos, por si vas adelantado o atrasado.</div>
+      </button>` : `
+      <p style="color:var(--muted);font-size:12px;line-height:1.5">
+        Aún no elegiste tu carrera, así que no podemos recomendarte cursos.
+        <button style="background:none;border:none;color:var(--accent);font-weight:700;cursor:pointer;padding:0" onclick="closeSheet('addCycleSheet');openCareerSheet(false)">Elegir carrera</button>
+      </p>`}
+      <button class="mode-opt" onclick="wizardCreateBlank()">
+        <div class="mode-opt-name">📄 Ciclo en blanco</div>
+        <div class="mode-opt-sub">Empiezas vacío y agregas tus cursos manualmente, como antes.</div>
+      </button>
+    </div>
+  `;
+  document.getElementById('addCycleActions').innerHTML = `
+    <button class="btn" onclick="closeSheet('addCycleSheet')">Cancelar</button>
+  `;
+}
+
+function wizardCreateBlank() {
+  if (!state.career) { closeSheet('addCycleSheet'); openCareerSheet(false); return; }
+  renderWizardMallaStep('blank');
+}
+
+// ── Ruta clásica ──
+function wizardStartClasica() {
+  renderWizardMallaStep('clasica');
+}
+function renderWizardMallaStep(mode) {
+  newCycleWizard.mode = mode;
+  const mallasKeys = Object.keys(MALLAS[state.career].mallas);
+  document.getElementById('addCycleBody').innerHTML = `
+    <button class="wizard-back-link" onclick="renderWizardMode()">‹ Atrás</button>
+    <div class="wizard-step-label">Elige la malla curricular</div>
+    <div class="mode-grid">
+      ${mallasKeys.map(y=>`
+        <button class="mode-opt" onclick="wizardSelectMalla('${y}')">
+          <div class="mode-opt-name">📘 Malla ${y}</div>
+          <div class="mode-opt-sub">Plan curricular vigente desde ${y}.</div>
+        </button>`).join('')}
+    </div>
+  `;
+  document.getElementById('addCycleActions').innerHTML = `
+    <button class="btn" onclick="closeSheet('addCycleSheet')">Cancelar</button>
+  `;
+}
+function wizardSelectMalla(year) {
+  state.malla = year;
+  if (newCycleWizard.mode === 'clasica') {
+    newCycleWizard.ciclo = 1;
+    wizardPickClasicaCiclo(1);
+  } else if (newCycleWizard.mode === 'personalizado') {
+    newCycleWizard.openAcc = {};
+    newCycleWizard.pChecked = {};
+    renderWizardPersonalizado();
+  } else if (newCycleWizard.mode === 'blank') {
+    // Ciclo en blanco: no hay malla que defina un total de créditos, así que
+    // arranca en 0 y se va configurando solo según los cursos que se añadan
+    // (ver saveNewCourse).
+    state.cycles[newCycleWizard.name] = { totalCredits: 0, courses: [], blank: true, malla: year };
+    state.currentCycle = newCycleWizard.name;
+    closeSheet('addCycleSheet'); switchView('ciclo');
+  }
+}
+function wizardPickClasicaCiclo(n) {
+  newCycleWizard.ciclo = n;
+  const ciclos = mallaCiclos(state.career, state.malla);
+  const courses = ciclos[n] || [];
+  if (!newCycleWizard.checked[n]) {
+    newCycleWizard.checked[n] = {};
+    courses.forEach((c,i)=>newCycleWizard.checked[n][i]=true);
+  }
+  document.getElementById('addCycleBody').innerHTML = `
+    <button class="wizard-back-link" onclick="renderWizardMallaStep('clasica')">‹ Atrás</button>
+    <div class="wizard-step-label">Ciclo de la malla</div>
+    <div class="ciclo-chip-row">
+      ${Object.keys(ciclos).map(k=>`<button class="ciclo-chip ${parseInt(k)===n?'active':''}" onclick="wizardPickClasicaCiclo(${k})">${k}</button>`).join('')}
+    </div>
+    <div class="wizard-step-label">Cursos recomendados — puedes quitar los que no lleves</div>
+    <div id="clasicaCourseList" class="wizard-scroll-list">
+      ${courses.map((c,i)=>`
+        <div class="course-check-row" style="cursor:pointer" onclick="if(event.target.tagName!=='INPUT'){const cb=this.querySelector('input[type=checkbox]');cb.checked=!cb.checked;cb.dispatchEvent(new Event('change'));}">
+          <input type="checkbox" ${newCycleWizard.checked[n][i]?'checked':''} onchange="newCycleWizard.checked[${n}][${i}]=this.checked;updClasicaSummary()">
+          <div class="course-check-name">${c.name}</div>
+          <div class="course-check-credits">${c.credits} cr.</div>
+        </div>`).join('')}
+    </div>
+    <div class="wizard-summary-bar" id="clasicaSummary"></div>
+  `;
+  updClasicaSummary();
+  document.getElementById('addCycleActions').innerHTML = `
+    <button class="btn" onclick="closeSheet('addCycleSheet')">Cancelar</button>
+    <button class="btn btn-accent" onclick="wizardConfirmClasica()">Crear ciclo</button>
+  `;
+}
+function updClasicaSummary() {
+  const n = newCycleWizard.ciclo;
+  const ciclos = mallaCiclos(state.career, state.malla);
+  const courses = ciclos[n] || [];
+  let cnt=0, cred=0;
+  courses.forEach((c,i)=>{ if(newCycleWizard.checked[n][i]){cnt++; cred+=c.credits;} });
+  const el = document.getElementById('clasicaSummary');
+  if (el) el.textContent = `${cnt} curso${cnt===1?'':'s'} seleccionados · ${cred} créditos`;
+}
+function wizardConfirmClasica() {
+  const n = newCycleWizard.ciclo;
+  const ciclos = mallaCiclos(state.career, state.malla);
+  const courses = (ciclos[n]||[]).filter((c,i)=>newCycleWizard.checked[n][i]).map(c=>({ ...c, mallaCiclo: n }));
+  proceedAfterSelection(courses);
+}
+
+// ── Personalizado ──
+function wizardStartPersonalizado() {
+  renderWizardMallaStep('personalizado');
+}
+function renderWizardPersonalizado(restoreScroll) {
+  const ciclos = mallaCiclos(state.career, state.malla);
+  document.getElementById('addCycleBody').innerHTML = `
+    <button class="wizard-back-link" onclick="renderWizardMallaStep('personalizado')">‹ Atrás</button>
+    <div class="wizard-step-label">Elige cursos de cualquier ciclo de la malla</div>
+    <div id="pAccordion" class="wizard-scroll-list">
+      ${Object.keys(ciclos).map(k=>{
+        const n = parseInt(k);
+        const courses = ciclos[n];
+        const isOpen = !!newCycleWizard.openAcc[n];
+        const checkedMap = newCycleWizard.pChecked[n] || {};
+        const cnt = Object.values(checkedMap).filter(Boolean).length;
+        return `
+        <div class="ciclo-accordion">
+          <div class="ciclo-acc-head" onclick="wizardToggleAcc(${n})">
+            <span class="ciclo-acc-title">Ciclo ${n}</span>
+            <span style="display:flex;align-items:center;gap:8px">
+              ${cnt?`<span class="ciclo-acc-count">${cnt}</span>`:''}
+              <span class="ciclo-acc-arrow ${isOpen?'open':''}">▶</span>
+            </span>
+          </div>
+          <div class="ciclo-acc-body ${isOpen?'open':''}">
+            ${courses.map((c,i)=>`
+              <div class="course-check-row" style="cursor:pointer" onclick="if(event.target.tagName!=='INPUT'){const cb=this.querySelector('input[type=checkbox]');cb.checked=!cb.checked;cb.dispatchEvent(new Event('change'));}">
+                <input type="checkbox" ${checkedMap[i]?'checked':''} onchange="wizardToggleCourse(${n},${i},this.checked)">
+                <div class="course-check-name">${c.name}</div>
+                <div class="course-check-credits">${c.credits} cr.</div>
+              </div>`).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="wizard-summary-bar" id="pSummary"></div>
+  `;
+  updPSummary();
+  document.getElementById('addCycleActions').innerHTML = `
+    <button class="btn" onclick="closeSheet('addCycleSheet')">Cancelar</button>
+    <button class="btn btn-accent" onclick="wizardConfirmPersonalizado()">Crear ciclo</button>
+  `;
+  if (restoreScroll) document.getElementById('pAccordion').scrollTop = restoreScroll;
+}
+function wizardToggleAcc(n) {
+  newCycleWizard.openAcc[n] = !newCycleWizard.openAcc[n];
+  const prevScroll = document.getElementById('pAccordion')?.scrollTop || 0;
+  renderWizardPersonalizado(prevScroll);
+}
+function wizardToggleCourse(n,i,val) {
+  if (!newCycleWizard.pChecked[n]) newCycleWizard.pChecked[n]={};
+  newCycleWizard.pChecked[n][i]=val;
+  const head = document.querySelectorAll('.ciclo-acc-head')[n-1];
+  if (head) {
+    const cnt = Object.values(newCycleWizard.pChecked[n]).filter(Boolean).length;
+    const countEl = head.querySelector('.ciclo-acc-count');
+    const arrowWrap = head.querySelector('span:last-child');
+    if (cnt && !countEl) arrowWrap.insertAdjacentHTML('afterbegin', `<span class="ciclo-acc-count">${cnt}</span>`);
+    else if (cnt && countEl) countEl.textContent = cnt;
+    else if (!cnt && countEl) countEl.remove();
+  }
+  updPSummary();
+}
+function updPSummary() {
+  const ciclos = mallaCiclos(state.career, state.malla);
+  let cnt=0, cred=0;
+  Object.keys(newCycleWizard.pChecked).forEach(n=>{
+    Object.keys(newCycleWizard.pChecked[n]).forEach(i=>{
+      if (newCycleWizard.pChecked[n][i]) {
+        cnt++; cred += ciclos[n][i].credits;
+      }
+    });
+  });
+  const el = document.getElementById('pSummary');
+  if (el) el.textContent = `${cnt} curso${cnt===1?'':'s'} seleccionados · ${cred} créditos`;
+}
+function wizardConfirmPersonalizado() {
+  const ciclos = mallaCiclos(state.career, state.malla);
+  const courses = [];
+  Object.keys(newCycleWizard.pChecked).forEach(n=>{
+    Object.keys(newCycleWizard.pChecked[n]).forEach(i=>{
+      if (newCycleWizard.pChecked[n][i]) courses.push({ ...ciclos[n][i], mallaCiclo: parseInt(n) });
+    });
+  });
+  proceedAfterSelection(courses);
+}
+
+// ── shared: check for ELECTIVO slots before finishing ──
+function proceedAfterSelection(courses) {
+  const hasElectivo = courses.some(c=>c.name==='ELECTIVO');
+  if (hasElectivo) wizardStartElectivoStep(courses);
+  else finishWizardWithCourses(courses);
+}
+
+// ── Elective picker ──
+function wizardStartElectivoStep(pendingCourses) {
+  newCycleWizard.pendingCourses = pendingCourses;
+  newCycleWizard.electivoNeeded = pendingCourses.filter(c=>c.name==='ELECTIVO').length;
+  newCycleWizard.electivoChecked = {};
+  renderElectivoStep();
+}
+function renderElectivoStep() {
+  const list = (MALLAS[state.career].electivos) || [];
+  const needed = newCycleWizard.electivoNeeded;
+  const checkedCount = Object.values(newCycleWizard.electivoChecked).filter(Boolean).length;
+  document.getElementById('addCycleTitle').textContent = 'Elige tus electivos';
+  document.getElementById('addCycleBody').innerHTML = `
+    <div class="wizard-step-label">Tienes ${needed} curso${needed===1?'':'s'} electivo${needed===1?'':'s'} por elegir en este ciclo</div>
+    <div id="electivoList" class="wizard-scroll-list">
+      ${list.map((name,i)=>`
+        <div class="course-check-row" style="cursor:pointer" onclick="if(event.target.tagName!=='INPUT'){const cb=this.querySelector('input[type=checkbox]');cb.checked=!cb.checked;cb.dispatchEvent(new Event('change'));}">
+          <input type="checkbox" ${newCycleWizard.electivoChecked[i]?'checked':''} onchange="wizardToggleElectivo(${i},this.checked)">
+          <div class="course-check-name">${name}</div>
+        </div>`).join('')}
+    </div>
+    <div class="wizard-summary-bar" id="electivoSummary">${checkedCount} / ${needed} seleccionados</div>
+  `;
+  document.getElementById('addCycleActions').innerHTML = `
+    <button class="btn" onclick="closeSheet('addCycleSheet')">Cancelar</button>
+    <button class="btn btn-accent" ${checkedCount!==needed?'disabled':''} onclick="wizardConfirmElectivos()">Crear ciclo</button>
+  `;
+}
+function wizardToggleElectivo(i,val) {
+  const needed = newCycleWizard.electivoNeeded;
+  if (needed === 1 && val) {
+    // Solo se necesita 1: al marcar uno, se desmarcan los demás (comportamiento tipo radio)
+    newCycleWizard.electivoChecked = { [i]: true };
+  } else {
+    newCycleWizard.electivoChecked[i] = val;
+  }
+  // Actualizamos solo lo necesario en el DOM (sin re-render completo) para no perder
+  // la posición del scroll en la lista, especialmente en celular.
+  const list = document.getElementById('electivoList');
+  if (list) {
+    list.querySelectorAll('input[type="checkbox"]').forEach((cb,idx)=>{
+      cb.checked = !!newCycleWizard.electivoChecked[idx];
+    });
+  }
+  const checkedCount = Object.values(newCycleWizard.electivoChecked).filter(Boolean).length;
+  const summary = document.getElementById('electivoSummary');
+  if (summary) summary.textContent = `${checkedCount} / ${needed} seleccionados`;
+  const confirmBtn = document.querySelector('#addCycleActions .btn-accent');
+  if (confirmBtn) confirmBtn.disabled = checkedCount!==needed;
+}
+function wizardConfirmElectivos() {
+  const list = (MALLAS[state.career].electivos) || [];
+  const chosenNames = Object.keys(newCycleWizard.electivoChecked)
+    .filter(i=>newCycleWizard.electivoChecked[i])
+    .map(i=>list[i]);
+  let ci = 0;
+  const finalCourses = newCycleWizard.pendingCourses.map(c=>{
+    if (c.name === 'ELECTIVO') { const name = chosenNames[ci++] || 'ELECTIVO'; return { name, credits: c.credits, mallaCiclo: c.mallaCiclo }; }
+    return c;
+  });
+  finishWizardWithCourses(finalCourses);
+}
+
+// ── shared finish step ──
+function finishWizardWithCourses(mallaCourses) {
+  const courses = mallaCourses.map((c,i)=>({
+    id: uid(),
+    name: c.name,
+    color: PALETTE[i%PALETTE.length],
+    credits: c.credits,
+    mallaCiclo: c.mallaCiclo!=null ? c.mallaCiclo : null,
+    // Igual que al añadir un curso manualmente: arranca con una fila de evaluación
+    // editable (no vacío del todo), para que la nota no quede "en off" cuando
+    // el usuario no ha activado la nota final.
+    evals: [{id:uid(),name:'',week:null,weight:0,nota:null,given:false}],
+    manualAvg: null
+  }));
+  const totalCredits = courses.reduce((s,c)=>s+(c.credits||0),0) || 20;
+  state.cycles[newCycleWizard.name] = { totalCredits, courses };
+  state.currentCycle = newCycleWizard.name;
+  closeSheet('addCycleSheet'); switchView('ciclo');
+}
+
+// ════════════════════════════════════════════════
+//  CREDITS SHEET
+// ════════════════════════════════════════════════
+let creditsDraft = {};
+
+function openCreditsSheet() {
+  const cd = cycleData();
+  creditsDraft = {
+    totalCredits: cd.totalCredits || 20,
+    courseCredits: {}
+  };
+  courses().forEach(c=>{ creditsDraft.courseCredits[c.id] = c.credits||0; });
+
+  document.getElementById('creditsBody').innerHTML = `
+    <div class="credits-cycle-row">
+      <span class="credits-cycle-label">Total de créditos del ciclo</span>
+      <input class="credits-total-inp" id="totalCredInp" type="number" inputmode="numeric"
+        min="1" max="60" value="${creditsDraft.totalCredits}"
+        oninput="creditsDraft.totalCredits=parseInt(this.value)||0;refreshCreditsPct()">
+    </div>
+    <div class="field-label" style="margin-bottom:8px">Créditos por curso</div>
+    <div id="creditsCourseList">
+      ${courses().map(c=>`
+        <div class="credits-course-row">
+          <div class="credits-course-dot" style="background:${c.color}"></div>
+          <div class="credits-course-name">${c.name}</div>
+          <input class="credits-course-inp" data-cid="${c.id}" type="number" inputmode="numeric"
+            min="0" max="20" value="${c.credits||0}"
+            oninput="creditsDraft.courseCredits['${c.id}']=parseInt(this.value)||0;refreshCreditsPct()">
+          <div class="credits-course-pct" id="cpct-${c.id}">—</div>
+        </div>`).join('')}
+    </div>
+  `;
+  refreshCreditsPct();
+  openSheet('creditsSheet');
+}
+
+function refreshCreditsPct() {
+  const total = parseInt(document.getElementById('totalCredInp')?.value)||1;
+  courses().forEach(c=>{
+    const inp = document.querySelector(`.credits-course-inp[data-cid="${c.id}"]`);
+    const cred = inp ? parseInt(inp.value)||0 : 0;
+    const el = document.getElementById('cpct-'+c.id);
+    if (el) el.textContent = total ? Math.round(cred/total*100)+'%' : '—';
+  });
+}
+
+function saveCredits() {
+  const cd = state.cycles[state.currentCycle];
+  cd.totalCredits = creditsDraft.totalCredits;
+  courses().forEach(c=>{ c.credits = creditsDraft.courseCredits[c.id]||0; });
+  closeSheet('creditsSheet'); render();
+}
+
+// ════════════════════════════════════════════════
+//  SHEET HELPERS
+// ════════════════════════════════════════════════
+function openSheet(id)  { document.getElementById(id).classList.add('open'); }
+function closeSheet(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(o=>{
+  o.addEventListener('click', e=>{ if(e.target===o) o.classList.remove('open'); });
+});
+
+// ════════════════════════════════════════════════
+//  INIT — triggered by Firebase onAuthStateChanged or enterAsGuest()
+// ════════════════════════════════════════════════
+</script>
+</body>
+</html>
