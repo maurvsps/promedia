@@ -9,6 +9,9 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "@google/genai": "^2.17.1",
+    "express": "^4.19.2",
+    "firebase": "^12.17.1",
+    "jsdom": "^30.0.1"
   }
 }

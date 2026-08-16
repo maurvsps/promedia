@@ -1,0 +1,21 @@
+{
+  "name": "Promedia",
+  "short_name": "Promedia",
+  "description": "Calculadora de promedio ponderado",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "https://api.dicebear.com/7.x/shapes/svg?seed=Promedia&backgroundColor=0a0a0a",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "https://api.dicebear.com/7.x/shapes/svg?seed=Promedia&backgroundColor=0a0a0a",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
