@@ -493,6 +493,56 @@ Devuelve el listado estructurado de cursos detectados.`;
   }
 });
 
+// Endpoint to parse Firebase Auth screenshot table with Gemini Vision
+app.post('/api/parse-auth-table', async (req, res) => {
+  try {
+    const { imageBase64, mimeType } = req.body;
+    if (!imageBase64) return res.status(400).json({ error: 'Falta la imagen' });
+
+    const ai = getGeminiClient();
+    const cleanMime = sanitizeImageMime(mimeType);
+
+    const imagePart = {
+      inlineData: {
+        mimeType: cleanMime,
+        data: imageBase64,
+      },
+    };
+
+    const promptText = `Analiza esta captura de pantalla de la tabla de usuarios de Firebase Authentication (o similar).
+Por cada fila de usuario visible en la tabla, extrae con la máxima precisión:
+1. 'email': El correo electrónico o identificador del usuario (ej: "20263168@aloe.ulima.edu.pe", "luismaquiroz2026@gmail.com", "promediasim@gmail.com", etc.). Si aparece truncado con puntos suspensivos (ej: "promediasim@gmail.c..."), completa el dominio evidente (ej. "@gmail.c..." -> "@gmail.com", "@aloe.ulima...." -> "@aloe.ulima.edu.pe", "@santisimo..." -> "@santisimonombre.edu.pe" o deja lo más claro posible).
+2. 'uidPrefix': El texto visible en la columna "UID del usuario" (ej: "dXTMIjevCHZtDBoEEbqjf8zZ", "yxj6RF8XOvdnKW7bDXILueOe", "PI4Puv8K1kd6owHWd4QADK", "s5N8ksFFtqbplAxpATtSy5Sihtk1", etc.). Omite los puntos suspensivos finales si los tiene.
+
+Devuelve la lista con todos los usuarios encontrados.`;
+
+    const response = await generateWithFallback(ai, {
+      contents: { parts: [imagePart, { text: promptText }] },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              email: { type: Type.STRING, description: "Correo electrónico del usuario" },
+              uidPrefix: { type: Type.STRING, description: "Prefijo o UID completo visible sin puntos suspensivos" }
+            },
+            required: ["email", "uidPrefix"]
+          }
+        }
+      }
+    });
+
+    const rawText = response.text || '[]';
+    const output = JSON.parse(cleanJsonText(rawText));
+    res.json(output);
+  } catch (error) {
+    console.error('Error in /api/parse-auth-table:', error);
+    res.status(500).json({ error: error.message || 'Error analizando la captura de Firebase con IA.' });
+  }
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });

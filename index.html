@@ -2522,16 +2522,37 @@ input[type="time"] { color-scheme: dark; } /* Base native dark scheme for the po
       <div style="font-size:16px; font-weight:900; color:var(--text);">⚡ Vincular Correos de Firebase Auth</div>
       <button onclick="closeSheet('adminSyncModal')" style="background:var(--s2); border:1px solid var(--border2); color:var(--text); border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer;">✕</button>
     </div>
-    <div style="font-size:12px; color:var(--sub); line-height:1.5;">
-      Pega aquí la lista o texto copiado de <b>Firebase Authentication &gt; Users</b> (o formato <code>UID,correo@ejemplo.com</code>). El sistema extraerá automáticamente los correos y sus UIDs y los guardará en Firestore para que aparezcan identificados.
+
+    <!-- AI Screenshot Reader Card -->
+    <div style="background:linear-gradient(135deg, rgba(245,106,36,0.12), rgba(99,102,241,0.12)); border:1.5px dashed var(--accent); border-radius:14px; padding:16px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px;">
+      <div style="font-size:24px;">✨📸</div>
+      <div>
+        <div style="font-size:13px; font-weight:900; color:var(--text);">Escanear Captura de Pantalla con IA</div>
+        <div style="font-size:11px; color:var(--sub); margin-top:2px;">Sube una captura de tu tabla de Firebase Authentication y la IA leerá los UIDs y correos automáticamente.</div>
+      </div>
+      <input type="file" id="adminAuthImageInput" accept="image/*" style="display:none;" onchange="handleAuthTableImageUpload(event)">
+      <button type="button" onclick="document.getElementById('adminAuthImageInput').click()" class="btn btn-accent" id="btnUploadAuthImg" style="padding:8px 18px; font-size:12px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
+        <span>📷 Subir Captura de Firebase</span>
+      </button>
+      <div id="adminAiScanStatus" style="display:none; font-size:11.5px; font-weight:700; color:var(--accent);"></div>
     </div>
-    <textarea id="adminSyncInput" rows="6" placeholder="Pega aquí el texto copiado de la consola de Firebase o líneas como:
-UID_DEL_USUARIO,correo@aloe.ulima.edu.pe
-otrouid12345,estudiante@gmail.com" style="width:100%; box-sizing:border-box; padding:12px; border-radius:12px; border:1px solid var(--border2); background:var(--s1); color:var(--text); font-family:monospace; font-size:11.5px; outline:none; resize:vertical;"></textarea>
+
+    <div style="display:flex; align-items:center; gap:10px; margin:4px 0;">
+      <div style="flex:1; height:1px; background:var(--border2);"></div>
+      <span style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase;">O pega texto / líneas</span>
+      <div style="flex:1; height:1px; background:var(--border2);"></div>
+    </div>
+
+    <div style="font-size:11.5px; color:var(--sub); line-height:1.4;">
+      Pega texto con formato <code>UID,correo@ejemplo.com</code> o filas copiadas de la consola.
+    </div>
+    <textarea id="adminSyncInput" rows="4" placeholder="Pega aquí líneas como:
+dXTMIjevCHZtDBoEEbqjf8zZ...,promediasim@gmail.com
+yxj6RF8XOvdnKW7bDXILueOe...,luismaquiroz2026@gmail.com" style="width:100%; box-sizing:border-box; padding:10px; border-radius:12px; border:1px solid var(--border2); background:var(--s1); color:var(--text); font-family:monospace; font-size:11px; outline:none; resize:vertical;"></textarea>
     <div id="adminSyncResult" style="display:none; font-size:12px; font-weight:700; padding:10px; border-radius:8px;"></div>
     <div style="display:flex; gap:10px; justify-content:flex-end;">
       <button onclick="closeSheet('adminSyncModal')" class="btn" style="padding:8px 14px; font-size:12px;">Cerrar</button>
-      <button onclick="executeAdminMassSync()" class="btn btn-accent" id="btnRunSync" style="padding:8px 18px; font-size:12px; font-weight:800;">🚀 Sincronizar Ahora</button>
+      <button onclick="executeAdminMassSync()" class="btn btn-accent" id="btnRunSync" style="padding:8px 18px; font-size:12px; font-weight:800;">🚀 Sincronizar Texto</button>
     </div>
   </div>
 </div>
@@ -9261,21 +9282,29 @@ window.executeAdminMassSync = async function() {
       if (!emailsFound || emailsFound.length === 0) continue;
       const email = emailsFound[0];
 
-      // Find if line contains any known UID
+      // Clean line from email to find the UID / UID-prefix token
+      const lineWithoutEmail = trimmed.replace(email, '').replace(/[\t,;|"']+/g, ' ').trim();
+      const tokens = lineWithoutEmail.split(/\s+/).map(t => t.replace(/(\.\.\.|\…)/g, '').trim()).filter(Boolean);
+
       let targetUid = null;
-      for (let uid of knownUids) {
-        if (trimmed.includes(uid)) {
-          targetUid = uid;
-          break;
+
+      // 1. Try matching tokens with known UIDs (exact or prefix match)
+      for (let t of tokens) {
+        if (t.length >= 10) {
+          const found = knownUids.find(uid => uid === t || uid.startsWith(t) || t.startsWith(uid) || uid.includes(t));
+          if (found) {
+            targetUid = found;
+            break;
+          }
         }
       }
 
-      // If no known UID found on the line, check if comma/tab separated like: UID,email
+      // 2. Direct search of known UIDs in line (exact or first 14 chars)
       if (!targetUid) {
-        const parts = trimmed.split(/[\t,;| ]+/);
-        for (let p of parts) {
-          if (p && p.length >= 20 && !p.includes('@')) {
-            targetUid = p;
+        for (let uid of knownUids) {
+          const prefix = uid.slice(0, 15);
+          if (trimmed.includes(uid) || (prefix.length >= 10 && trimmed.includes(prefix))) {
+            targetUid = uid;
             break;
           }
         }
@@ -9316,7 +9345,107 @@ window.executeAdminMassSync = async function() {
     res.textContent = 'Error durante la sincronización: ' + e.message;
   } finally {
     btn.disabled = false;
-    btn.textContent = '🚀 Sincronizar Ahora';
+    btn.textContent = '🚀 Sincronizar Texto';
+  }
+};
+
+window.handleAuthTableImageUpload = async function(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  const statusEl = document.getElementById('adminAiScanStatus');
+  const btn = document.getElementById('btnUploadAuthImg');
+  const res = document.getElementById('adminSyncResult');
+
+  if (statusEl) {
+    statusEl.style.display = 'block';
+    statusEl.textContent = 'Analizando captura con IA (Gemini Vision)... ⏳';
+  }
+  if (btn) btn.disabled = true;
+  if (res) res.style.display = 'none';
+
+  try {
+    const { base64, mimeType } = await readAndPrepareImageFile(file);
+
+    const response = await fetch('/api/parse-auth-table', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        imageBase64: base64,
+        mimeType: mimeType
+      })
+    });
+
+    const parsedItems = await response.json();
+    if (!response.ok || !Array.isArray(parsedItems)) {
+      throw new Error(parsedItems.error || 'No se pudieron extraer datos de la imagen');
+    }
+
+    if (parsedItems.length === 0) {
+      throw new Error('La IA no encontró filas de usuarios en esta imagen.');
+    }
+
+    if (statusEl) {
+      statusEl.textContent = `IA detectó ${parsedItems.length} usuarios. Vinculando en Firestore... 💾`;
+    }
+
+    // Match with known users
+    let matchedCount = 0;
+    const knownUids = _adminUsersData.map(u => u.id);
+
+    for (const item of parsedItems) {
+      let email = (item.email || '').trim();
+      let prefix = (item.uidPrefix || '').replace(/(\.\.\.|\…)/g, '').trim();
+      if (!email || !email.includes('@') || !prefix) continue;
+
+      // Find matching UID in knownUids
+      let targetUid = knownUids.find(uid => uid === prefix || uid.startsWith(prefix) || prefix.startsWith(uid) || (prefix.length >= 8 && uid.includes(prefix)));
+
+      if (targetUid) {
+        await window._fbSetDoc(window._fbDoc(window._fbDb, 'users', targetUid), {
+          email: email,
+          displayName: email.split('@')[0],
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        const cached = _adminUsersData.find(x => x.id === targetUid);
+        if (cached) {
+          cached.email = email;
+          cached.displayName = email.split('@')[0];
+        }
+        matchedCount++;
+      }
+    }
+
+    if (res) {
+      res.style.display = 'block';
+      if (matchedCount > 0) {
+        res.style.background = 'rgba(16, 185, 129, 0.15)';
+        res.style.color = 'var(--green)';
+        res.textContent = `🎉 ¡IA completó la vinculación! Se asociaron ${matchedCount} usuarios de ${parsedItems.length} detectados en la captura.`;
+        if (typeof showToast === 'function') showToast(`🎉 ${matchedCount} usuarios vinculados con IA`);
+        setTimeout(() => {
+          closeSheet('adminSyncModal');
+          renderAdminStats();
+        }, 2000);
+      } else {
+        res.style.background = 'rgba(245, 158, 11, 0.15)';
+        res.style.color = 'var(--amber)';
+        res.textContent = `La IA detectó ${parsedItems.length} usuarios en la imagen, pero ninguno coincidió con los UIDs de Firestore.`;
+      }
+    }
+  } catch(e) {
+    console.error('Error in handleAuthTableImageUpload:', e);
+    if (res) {
+      res.style.display = 'block';
+      res.style.background = 'rgba(239, 68, 68, 0.15)';
+      res.style.color = 'var(--red)';
+      res.textContent = 'Error al escanear con IA: ' + e.message;
+    }
+  } finally {
+    if (statusEl) statusEl.style.display = 'none';
+    if (btn) btn.disabled = false;
+    event.target.value = '';
   }
 };
 
