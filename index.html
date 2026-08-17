@@ -15,6 +15,15 @@ if (window.location.search.includes('reset=1')) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
 </script>
 
+<!-- Google Analytics (GA4) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-74TNCXF6ZQ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-74TNCXF6ZQ');
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Promedia</title>
@@ -60,7 +69,7 @@ if (window.location.search.includes('reset=1')) {
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, updateProfile, sendEmailVerification } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc, addDoc, collection, serverTimestamp }
+import { getFirestore, doc, getDoc, setDoc, addDoc, collection, serverTimestamp, getDocs, deleteDoc, query, orderBy }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -84,6 +93,10 @@ window._fbDoc  = doc;
 window._fbGetDoc  = getDoc;
 window._fbSetDoc  = setDoc;
 window._fbAddDoc  = addDoc;
+window._fbGetDocs = getDocs;
+window._fbDeleteDoc = deleteDoc;
+window._fbQuery = query;
+window._fbOrderBy = orderBy;
 window._fbCollection = collection;
 window._fbServerTimestamp = serverTimestamp;
 window._fbSignOut = () => signOut(auth);
@@ -105,6 +118,17 @@ onAuthStateChanged(auth, async user => {
       return;
     }
     window._currentUser = user;
+    
+    // Auto-registrar/actualizar datos del usuario para telemetría admin
+    try {
+      setDoc(doc(db, 'users', user.uid), {
+        email: user.email || '',
+        displayName: user.displayName || (user.email ? user.email.split('@')[0] : 'Usuario'),
+        photoURL: user.photoURL || '',
+        lastLogin: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }, { merge: true }).catch(err => console.warn('Telemetry merge error:', err));
+    } catch(err) {}
     const authScreen = document.getElementById('authScreen');
     const appRoot = document.getElementById('appRoot');
     if (authScreen) authScreen.style.display = 'none';
@@ -123,9 +147,18 @@ onAuthStateChanged(auth, async user => {
       const snap = await getDoc(doc(db, 'users', user.uid));
       if (snap.exists()) {
         const d = snap.data();
-        if (d.state) window._loadedState = d.state;
-        if (d.simGame && d.simGame.name) window._loadedSimGame = d.simGame;
-        if (d.achievements) localStorage.setItem('ulima_achievements', JSON.stringify(d.achievements));
+        if (d.state) {
+          window._loadedState = d.state;
+          if (window.PromediaDB) window.PromediaDB.set('app_state', 'notas26v2_' + user.uid, d.state);
+        }
+        if (d.simGame && d.simGame.name) {
+          window._loadedSimGame = d.simGame;
+          if (window.PromediaDB) window.PromediaDB.set('sim_game', 'sim_' + user.uid, d.simGame);
+        }
+        if (d.achievements) {
+          localStorage.setItem('ulima_achievements', JSON.stringify(d.achievements));
+          if (window.PromediaDB) window.PromediaDB.set('achievements', 'achievements_' + user.uid, d.achievements);
+        }
         hadCloudData = true;
       }
     } catch(e) { console.warn('Firestore load error', e); }
@@ -1326,6 +1359,7 @@ button.course-check-row { color: var(--text); }
 .sync-dot.syncing { background: var(--yellow); }
 .sync-dot.synced  { background: var(--green); }
 .sync-dot.error   { background: var(--red); }
+.sync-dot.offline { background: var(--yellow); opacity: 0.85; }
 
 /* ── PERFIL (página completa) ── */
 .perfil-wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
@@ -2423,68 +2457,57 @@ input[type="time"] { color-scheme: dark; } /* Base native dark scheme for the po
 
   </div>
 </div>
-<!-- DEV EVENT & MINIGAME EXPLORER SHEET -->
-<div class="overlay" id="devViewerSheet">
-  <div class="sheet" style="padding:0; background:var(--bg); height:92vh; max-height:860px; border-radius:24px 24px 0 0; overflow:hidden; display:flex; flex-direction:column;">
+<!-- ADMIN PANEL SHEET -->
+<div class="overlay" id="adminSheet">
+  <div class="sheet" style="padding:0; background:var(--bg); height:94vh; max-height:880px; border-radius:24px 24px 0 0; overflow:hidden; display:flex; flex-direction:column;">
     <div class="sheet-handle" style="background:var(--border2); z-index:10;"></div>
     
     <!-- Top Header -->
     <div style="padding:16px 20px 12px; border-bottom:1px solid var(--border2); background:var(--s1); display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
       <div>
         <div style="font-size:16px; font-weight:900; color:var(--text); display:flex; align-items:center; gap:8px;">
-          <span>🔍 Explorador de Eventos & Minijuegos</span>
-          <span style="font-size:10px; background:var(--accent); color:var(--accent-text, #fff); padding:2px 6px; border-radius:6px; font-weight:800;">EDITOR DEV</span>
+          <span>👑 Panel Admin & Analíticas</span>
+          <span style="font-size:10px; background:var(--accent); color:#fff; padding:2px 6px; border-radius:6px; font-weight:800;">PROMEDIA ADMIN</span>
         </div>
         <div style="font-size:11px; color:var(--sub); font-weight:600; margin-top:2px;">
-          Visualiza, filtra y prueba minijuegos sin jugar toda la partida.
+          Estadísticas en tiempo real, usuarios registrados y explorador Cachimbo.
         </div>
       </div>
-      <button onclick="closeSheet('devViewerSheet')" style="background:var(--s2); border:1px solid var(--border2); color:var(--text); border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; font-weight:800;">✕</button>
+      <button onclick="closeSheet('adminSheet')" style="background:var(--s2); border:1px solid var(--border2); color:var(--text); border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; font-weight:800;">✕</button>
     </div>
 
-    <!-- Tabs & Filters -->
-    <div style="padding:12px 16px; background:var(--bg); border-bottom:1px solid var(--border2); display:flex; flex-direction:column; gap:10px; flex-shrink:0;">
-      <!-- Tab Switcher -->
-      <div style="display:flex; background:var(--s2); border-radius:10px; padding:3px; gap:4px;">
-        <button id="devTabEventsBtn" onclick="switchDevViewerTab('events')" style="flex:1; padding:8px 12px; font-size:12px; font-weight:800; border-radius:8px; border:none; background:var(--s1); color:var(--text); cursor:pointer; transition:all 0.2s;">
-          📑 Eventos (<span id="devEventsCount">0</span>)
+    <!-- Admin Tabs -->
+    <div style="padding:10px 16px; background:var(--bg); border-bottom:1px solid var(--border2); flex-shrink:0;">
+      <div style="display:flex; background:var(--s2); border-radius:12px; padding:4px; gap:4px; overflow-x:auto;">
+        <button id="adminTabStatsBtn" onclick="switchAdminTab('stats')" style="flex:1; min-width:110px; padding:8px 12px; font-size:12px; font-weight:800; border-radius:8px; border:none; background:var(--s1); color:var(--text); cursor:pointer; transition:all 0.2s;">
+          📊 Estadísticas
         </button>
-        <button id="devTabMinigamesBtn" onclick="switchDevViewerTab('minigames')" style="flex:1; padding:8px 12px; font-size:12px; font-weight:800; border-radius:8px; border:none; background:transparent; color:var(--sub); cursor:pointer; transition:all 0.2s;">
-          🎮 Minijuegos de Prueba (<span id="devMgCount">0</span>)
+        <button id="adminTabEventsBtn" onclick="switchAdminTab('events')" style="flex:1; min-width:130px; padding:8px 12px; font-size:12px; font-weight:800; border-radius:8px; border:none; background:transparent; color:var(--sub); cursor:pointer; transition:all 0.2s;">
+          🎮 Eventos & Minijuegos
         </button>
-      </div>
-
-      <!-- Filters Row for Events -->
-      <div id="devEventsFilterRow" style="display:flex; gap:8px; flex-wrap:wrap;">
-        <input type="text" id="devSearchInput" placeholder="Buscar por título, texto..." oninput="renderDevEventsList()" style="flex:1.4; min-width:140px; padding:8px 12px; font-size:12px; font-weight:700; border-radius:8px; background:var(--s1); border:1px solid var(--border2); color:var(--text); outline:none;">
-        <select id="devCareerSelect" onchange="renderDevEventsList()" style="flex:1.2; min-width:130px; padding:8px 10px; font-size:12px; font-weight:700; border-radius:8px; background:var(--s1); border:1px solid var(--border2); color:var(--text); outline:none;">
-          <option value="ALL">Todas las Carreras</option>
-          <option value="GENERAL">Generales (Todas)</option>
-        </select>
-        <select id="devCycleSelect" onchange="renderDevEventsList()" style="flex:0.8; min-width:90px; padding:8px 10px; font-size:12px; font-weight:700; border-radius:8px; background:var(--s1); border:1px solid var(--border2); color:var(--text); outline:none;">
-          <option value="ALL">Ciclos</option>
-          <option value="1">Ciclo 1</option>
-          <option value="2">Ciclo 2</option>
-          <option value="3">Ciclo 3</option>
-          <option value="4">Ciclo 4</option>
-          <option value="5">Ciclo 5</option>
-          <option value="6">Ciclo 6</option>
-          <option value="7">Ciclo 7</option>
-          <option value="8">Ciclo 8</option>
-          <option value="9">Ciclo 9</option>
-          <option value="10">Ciclo 10</option>
-        </select>
-        <select id="devMinigameFilterSelect" onchange="renderDevEventsList()" style="flex:1; min-width:135px; padding:8px 10px; font-size:12px; font-weight:700; border-radius:8px; background:var(--s1); border:1px solid var(--border2); color:var(--text); outline:none;">
-          <option value="ALL">🎲 Todos los Eventos</option>
-          <option value="NO_MG">📄 Sin Minijuego (Solo Decisiones)</option>
-          <option value="WITH_MG">🎮 Con Minijuego</option>
-        </select>
+        <button id="adminTabSuggestionsBtn" onclick="switchAdminTab('suggestions')" style="flex:1; min-width:110px; padding:8px 12px; font-size:12px; font-weight:800; border-radius:8px; border:none; background:transparent; color:var(--sub); cursor:pointer; transition:all 0.2s;">
+          💬 Sugerencias
+        </button>
       </div>
     </div>
 
-    <!-- Content Body -->
-    <div id="devViewerContent" style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px;">
-      <!-- List injected dynamically -->
+    <!-- Content Area -->
+    <div id="adminSheetContent" style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:16px;">
+      <!-- Content loaded dynamically -->
+    </div>
+  </div>
+</div>
+
+<!-- USER DETAIL MODAL -->
+<div class="overlay" id="adminUserModal" style="z-index: 10050;">
+  <div class="sheet" style="padding:20px; background:var(--bg); max-height:85vh; border-radius:24px 24px 0 0; overflow-y:auto; display:flex; flex-direction:column; gap:14px;">
+    <div class="sheet-handle" style="background:var(--border2);"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div style="font-size:16px; font-weight:900; color:var(--text);" id="adminUserModalTitle">Detalle de Usuario</div>
+      <button onclick="closeSheet('adminUserModal')" style="background:var(--s2); border:1px solid var(--border2); color:var(--text); border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer;">✕</button>
+    </div>
+    <div id="adminUserModalBody" style="display:flex; flex-direction:column; gap:12px;">
+      <!-- Details loaded dynamically -->
     </div>
   </div>
 </div>
@@ -3276,36 +3299,150 @@ function maybeShowPonderadoTutorial() {
 }
 
 // ════════════════════════════════════════════════
-//  PERSISTENCE — localStorage + Firestore
+//  PERSISTENCE — IndexedDB + localStorage + Firestore
 // ════════════════════════════════════════════════
-let _saveTimer = null;
-let _pendingCloudSave = null; // set while a Firestore write hasn't been confirmed yet
+const PromediaDB = {
+  dbName: 'promedia_idb',
+  dbVersion: 1,
+  _dbPromise: null,
 
-// Local cache key is scoped per signed-in user (or 'guest') so that switching
-// accounts on the same browser can never leak one user's cached data into
-// another user's session.
+  getDB() {
+    if (this._dbPromise) return this._dbPromise;
+    this._dbPromise = new Promise((resolve) => {
+      if (!window.indexedDB) {
+        resolve(null);
+        return;
+      }
+      const req = indexedDB.open(this.dbName, this.dbVersion);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('app_state')) {
+          db.createObjectStore('app_state', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('sim_game')) {
+          db.createObjectStore('sim_game', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('achievements')) {
+          db.createObjectStore('achievements', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('offline_queue')) {
+          db.createObjectStore('offline_queue', { keyPath: 'id' });
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = (err) => {
+        console.warn('IndexedDB error:', err);
+        resolve(null);
+      };
+    });
+    return this._dbPromise;
+  },
+
+  async get(storeName, id) {
+    try {
+      const db = await this.getDB();
+      if (!db) return null;
+      return new Promise((resolve) => {
+        const tx = db.transaction(storeName, 'readonly');
+        const store = tx.objectStore(storeName);
+        const req = store.get(id);
+        req.onsuccess = () => resolve(req.result ? req.result.value : null);
+        req.onerror = () => resolve(null);
+      });
+    } catch(e) {
+      return null;
+    }
+  },
+
+  async set(storeName, id, value) {
+    try {
+      const db = await this.getDB();
+      if (!db) return false;
+      return new Promise((resolve) => {
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        const req = store.put({ id, value, updatedAt: Date.now() });
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+      });
+    } catch(e) {
+      return false;
+    }
+  },
+
+  async delete(storeName, id) {
+    try {
+      const db = await this.getDB();
+      if (!db) return false;
+      return new Promise((resolve) => {
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        const req = store.delete(id);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => resolve(false);
+      });
+    } catch(e) {
+      return false;
+    }
+  }
+};
+window.PromediaDB = PromediaDB;
+
+let _saveTimer = null;
+let _pendingCloudSave = null;
+
 function storageKey() {
   return 'notas26v2_' + (window._currentUser ? window._currentUser.uid : 'guest');
 }
 
+function simStorageKey() {
+  return 'sim_' + (window._currentUser ? window._currentUser.uid : 'guest');
+}
+
+function achStorageKey() {
+  return 'achievements_' + (window._currentUser ? window._currentUser.uid : 'guest');
+}
+
 async function flushCloudSave() {
   if (!window._currentUser) return;
+  if (!navigator.onLine) {
+    setSyncDot('offline');
+    return;
+  }
   clearTimeout(_saveTimer);
   
-  // Recopilar el estado más reciente directamente en lugar de usar _pendingCloudSave
   const currentAcademicState = typeof state !== 'undefined' ? state : {};
   const currentSimGame = typeof simGame !== 'undefined' ? simGame : {};
   let currentAchievements = [];
   try { currentAchievements = JSON.parse(localStorage.getItem('ulima_achievements') || '[]'); } catch(e) {}
 
   try {
+    const totalCycles = Object.keys(currentAcademicState.cycles || {}).length;
+    let totalCourses = 0;
+    for (let k in (currentAcademicState.cycles || {})) {
+      if (currentAcademicState.cycles[k] && currentAcademicState.cycles[k].courses) {
+        totalCourses += currentAcademicState.cycles[k].courses.length;
+      }
+    }
+
     await window._fbSetDoc(
       window._fbDoc(window._fbDb, 'users', window._currentUser.uid),
       { 
-          state: currentAcademicState, 
+          email: window._currentUser.email || '',
+          displayName: window._currentUser.displayName || (window._currentUser.email ? window._currentUser.email.split('@')[0] : 'Usuario'),
+          photoURL: window._currentUser.photoURL || '',
+          lastLogin: new Date().toISOString(),
+          career: currentAcademicState.career || 'Sin configurar',
+          malla: currentAcademicState.malla || '2026',
+          cyclesCount: totalCycles,
+          coursesCount: totalCourses,
           simGame: currentSimGame,
-          achievements: currentAchievements
-      }
+          achievementsCount: currentAchievements.length,
+          state: currentAcademicState, 
+          achievements: currentAchievements,
+          updatedAt: new Date().toISOString()
+      },
+      { merge: true }
     );
     setSyncDot('synced');
   } catch(e) {
@@ -3315,54 +3452,93 @@ async function flushCloudSave() {
 }
 
 function saveState() {
-  // Always save locally, under a key scoped to the current user
+  // 1. Guardado síncrono rápido en localStorage
   try { localStorage.setItem(storageKey(), JSON.stringify(state)); } catch(e) {}
-  // If logged in, debounce-sync to Firestore
+  
+  // 2. Guardado persistente en IndexedDB
+  PromediaDB.set('app_state', storageKey(), state);
+
+  // 3. Sincronización en la nube si hay red, o marcación de cola offline si no la hay
   if (window._currentUser) {
-    setSyncDot('syncing');
-    clearTimeout(_saveTimer);
-    _saveTimer = setTimeout(flushCloudSave, 1200);
+    if (navigator.onLine) {
+      setSyncDot('syncing');
+      clearTimeout(_saveTimer);
+      _saveTimer = setTimeout(flushCloudSave, 1200);
+    } else {
+      setSyncDot('offline');
+      PromediaDB.set('offline_queue', 'pending_' + window._currentUser.uid, {
+        uid: window._currentUser.uid,
+        pending: true,
+        updatedAt: Date.now()
+      });
+    }
   }
 }
 
-// Nueva función para forzar el guardado del simulador y logros
 function saveSimProgress() {
-    try { localStorage.setItem('ulima_simGame', JSON.stringify(typeof simGame !== 'undefined' ? simGame : {})); } catch(e) {}
-    if (window._currentUser) {
-        setSyncDot('syncing');
-        clearTimeout(_saveTimer);
-        _saveTimer = setTimeout(flushCloudSave, 1200);
+  const currentSim = typeof simGame !== 'undefined' ? simGame : {};
+  try { localStorage.setItem('ulima_simGame', JSON.stringify(currentSim)); } catch(e) {}
+  PromediaDB.set('sim_game', simStorageKey(), currentSim);
+
+  if (window._currentUser) {
+    if (navigator.onLine) {
+      setSyncDot('syncing');
+      clearTimeout(_saveTimer);
+      _saveTimer = setTimeout(flushCloudSave, 1200);
+    } else {
+      setSyncDot('offline');
+      PromediaDB.set('offline_queue', 'pending_' + window._currentUser.uid, {
+        uid: window._currentUser.uid,
+        pending: true,
+        updatedAt: Date.now()
+      });
     }
+  }
 }
 
-// Make sure a pending (debounced) cloud save isn't lost if the user reloads,
-// closes the tab, or switches away right after making a change.
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') flushCloudSave();
 });
 window.addEventListener('pagehide', flushCloudSave);
 
 function loadState() {
-  // If Firebase loaded a cloud state, prefer that
+  // 1. Si Firebase ya cargó estado de la nube
   if (window._loadedState) {
     const s = window._loadedState;
     window._loadedState = null;
+    try { localStorage.setItem(storageKey(), JSON.stringify(s)); } catch(e) {}
+    PromediaDB.set('app_state', storageKey(), s);
     return s;
   }
+
+  // 2. Carga directa de localStorage
+  let localData = null;
   try {
     const s = localStorage.getItem(storageKey());
-    if (s) return JSON.parse(s);
-    // One-time migration: older versions of the app stored everything under a
-    // single shared (non user-scoped) key. Claim that cache for this session
-    // and remove it immediately so it can never leak into a different account.
-    const legacy = localStorage.getItem('notas26v2');
-    if (legacy) {
-      localStorage.removeItem('notas26v2');
-      localStorage.setItem(storageKey(), legacy);
-      return JSON.parse(legacy);
+    if (s) {
+      localData = JSON.parse(s);
+    } else {
+      const legacy = localStorage.getItem('notas26v2');
+      if (legacy) {
+        localStorage.removeItem('notas26v2');
+        localStorage.setItem(storageKey(), legacy);
+        localData = JSON.parse(legacy);
+      }
     }
-    return null;
-  } catch(e) { return null; }
+  } catch(e) {}
+
+  // 3. Consulta en IndexedDB para asegurar restauración completa en modo offline
+  PromediaDB.get('app_state', storageKey()).then(idbState => {
+    if (idbState && typeof idbState === 'object') {
+      if (!localData || JSON.stringify(idbState) !== JSON.stringify(localData)) {
+        state = idbState;
+        try { localStorage.setItem(storageKey(), JSON.stringify(state)); } catch(e) {}
+        if (typeof render === 'function') render();
+      }
+    }
+  });
+
+  return localData;
 }
 
 let _lastSyncStatus = 'synced';
@@ -3371,6 +3547,31 @@ function setSyncDot(status) {
   const dot = document.getElementById('syncDot');
   if (dot) dot.className = 'sync-dot ' + status;
 }
+
+// Escuchadores de estado de red (online / offline)
+window.addEventListener('online', async () => {
+  if (typeof showToast === 'function') {
+    showToast('🌐 Conexión restablecida — Sincronizando datos', 'check');
+  }
+  if (window._currentUser) {
+    setSyncDot('syncing');
+    const queueKey = 'pending_' + window._currentUser.uid;
+    const pending = await PromediaDB.get('offline_queue', queueKey);
+    if (pending) {
+      await PromediaDB.delete('offline_queue', queueKey);
+    }
+    await flushCloudSave();
+  } else {
+    setSyncDot('synced');
+  }
+});
+
+window.addEventListener('offline', () => {
+  if (typeof showToast === 'function') {
+    showToast('📶 Modo sin conexión (datos guardados en IndexedDB)', 'info');
+  }
+  setSyncDot('offline');
+});
 
 // ════════════════════════════════════════════════
 //  AUTH HELPERS
@@ -4051,6 +4252,28 @@ function renderPerfil() {
           ? `<button class="btn btn-accent" id="createAccountOption" onclick="openCreateAccountFromGuest()">Crear cuenta o iniciar sesión</button>`
           : `<button class="btn btn-danger" onclick="doSignOut()">Cerrar sesión</button>`}
       </div>
+
+      ${((window._currentUser && (window._currentUser.email === 'mvegas0403@gmail.com' || window._isAdmin)) || window._isAdmin || window.location.search.includes('admin=1')) ? `
+        <div class="perfil-card" style="border:2px solid var(--accent); background:linear-gradient(135deg, rgba(99, 102, 241, 0.12), var(--s1)); margin-bottom: 2px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="width:38px; height:38px; border-radius:10px; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900;">
+                👑
+              </div>
+              <div>
+                <div style="font-weight:800; font-size:14px; color:var(--text); display:flex; align-items:center; gap:6px;">
+                  Panel de Control Admin
+                  <span style="font-size:9px; background:var(--accent); color:#fff; padding:2px 6px; border-radius:6px; font-weight:800;">PROMEDIA ADMIN</span>
+                </div>
+                <div style="font-size:11.5px; color:var(--sub); margin-top:2px;">Estadísticas en vivo, usuarios registrados y explorador Cachimbo.</div>
+              </div>
+            </div>
+            <button class="btn btn-accent" onclick="openAdminSheet()" style="padding:8px 14px; font-size:12px; font-weight:800; white-space:nowrap;">
+              Abrir Admin
+            </button>
+          </div>
+        </div>
+      ` : ''}
 
       <div class="perfil-card">
         <div class="dash-card-title">Apariencia</div>
@@ -8374,6 +8597,9 @@ function unlockAchievement(id) {
     if (!unlocked.includes(id)) {
         unlocked.push(id);
         localStorage.setItem('ulima_achievements', JSON.stringify(unlocked));
+        if (window.PromediaDB && typeof achStorageKey === 'function') {
+          PromediaDB.set('achievements', achStorageKey(), unlocked);
+        }
         if (typeof saveSimProgress === 'function') saveSimProgress();
         
         let ach = ALL_ACHIEVEMENTS.find(a => a.id === id);
@@ -8542,6 +8768,15 @@ function initCachimbo(forceReset = false) {
                 let localSim = JSON.parse(localStorage.getItem('ulima_simGame')); 
                 if (localSim && localSim.name) savedSim = localSim;
             } catch(e) {}
+            if (!savedSim && window.PromediaDB && typeof simStorageKey === 'function') {
+                PromediaDB.get('sim_game', simStorageKey()).then(idbSim => {
+                    if (idbSim && idbSim.name && (!simGame || !simGame.name)) {
+                        simGame = idbSim;
+                        try { localStorage.setItem('ulima_simGame', JSON.stringify(simGame)); } catch(e) {}
+                        if (typeof updateSimUI === 'function') updateSimUI();
+                    }
+                });
+            }
         }
     }
     
@@ -8618,28 +8853,390 @@ window.closeCachimbo = function() {
 };
 
 // ════════════════════════════════════════════════
-//  DEV VIEWER: EXPLORADOR DE EVENTOS Y MINIJUEGOS
+//  ADMIN DASHBOARD & TELEMETRÍA DE USUARIOS
 // ════════════════════════════════════════════════
-let devCurrentTab = 'events';
+let adminCurrentTab = 'stats';
+let _adminUsersData = [];
+
+window.openAdminSheet = function(tab = 'stats') {
+  openSheet('adminSheet');
+  switchAdminTab(tab);
+};
 
 window.openDevViewerSheet = function() {
-    // Populate careers filter
-    const careerSelect = document.getElementById('devCareerSelect');
-    if (careerSelect && simCareers && simCareers.length > 0) {
-        let opts = '<option value="ALL">Todas las Carreras</option><option value="GENERAL">Generales (Sin filtro)</option>';
-        simCareers.forEach(c => {
-            opts += `<option value="${c}">${c}</option>`;
-        });
-        careerSelect.innerHTML = opts;
+  openAdminSheet('events');
+};
+
+window.switchAdminTab = function(tab) {
+  adminCurrentTab = tab;
+  const bStats = document.getElementById('adminTabStatsBtn');
+  const bEvents = document.getElementById('adminTabEventsBtn');
+  const bSugg = document.getElementById('adminTabSuggestionsBtn');
+
+  if (bStats) { bStats.style.background = tab === 'stats' ? 'var(--s1)' : 'transparent'; bStats.style.color = tab === 'stats' ? 'var(--text)' : 'var(--sub)'; }
+  if (bEvents) { bEvents.style.background = tab === 'events' ? 'var(--s1)' : 'transparent'; bEvents.style.color = tab === 'events' ? 'var(--text)' : 'var(--sub)'; }
+  if (bSugg) { bSugg.style.background = tab === 'suggestions' ? 'var(--s1)' : 'transparent'; bSugg.style.color = tab === 'suggestions' ? 'var(--text)' : 'var(--sub)'; }
+
+  if (tab === 'stats') {
+    renderAdminStats();
+  } else if (tab === 'events') {
+    renderAdminEvents();
+  } else if (tab === 'suggestions') {
+    renderAdminSuggestions();
+  }
+};
+
+window.renderAdminStats = async function() {
+  const ctn = document.getElementById('adminSheetContent');
+  if (!ctn) return;
+
+  ctn.innerHTML = `
+    <div style="text-align:center; padding:40px 20px; color:var(--muted);">
+      <div class="spinner" style="margin:0 auto 12px auto; width:32px; height:32px; border:3px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+      <div style="font-size:13px; font-weight:800; color:var(--text);">Conectando a Firestore...</div>
+      <div style="font-size:11px; margin-top:4px;">Obteniendo registros y métricas en tiempo real</div>
+    </div>
+  `;
+
+  try {
+    if (!window._fbDb || !window._fbGetDocs || !window._fbCollection) {
+      throw new Error('SDK de Firestore no listo');
     }
-    
-    // Update counts
-    updateDevViewerCounts();
-    
-    // Switch to active tab and render
-    switchDevViewerTab(devCurrentTab);
-    
-    openSheet('devViewerSheet');
+    const snap = await window._fbGetDocs(window._fbCollection(window._fbDb, 'users'));
+    let users = [];
+    snap.forEach(docSnap => {
+      users.push({ id: docSnap.id, ...docSnap.data() });
+    });
+
+    _adminUsersData = users;
+
+    const total = users.length;
+    const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+    const sevenDays = 7 * oneDay;
+
+    let activeToday = 0;
+    let activeWeek = 0;
+    let cachimboPlayers = 0;
+    let careerMap = {};
+
+    users.forEach(u => {
+      const last = u.lastLogin ? new Date(u.lastLogin).getTime() : 0;
+      if (now - last <= oneDay) activeToday++;
+      if (now - last <= sevenDays) activeWeek++;
+
+      if (u.simGame && u.simGame.name) cachimboPlayers++;
+
+      let car = u.career || 'Sin configurar';
+      if (typeof MALLAS !== 'undefined' && MALLAS[car] && MALLAS[car].label) car = MALLAS[car].label;
+      careerMap[car] = (careerMap[car] || 0) + 1;
+    });
+
+    const careerList = Object.keys(careerMap).map(k => ({ name: k, count: careerMap[k] })).sort((a,b) => b.count - a.count);
+
+    let html = `
+      <!-- KPI Hero Grid -->
+      <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:10px;">
+        <div style="background:var(--s1); border:1px solid var(--border2); border-radius:14px; padding:14px; text-align:left;">
+          <div style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase;">👥 Total Registrados</div>
+          <div style="font-size:28px; font-weight:900; color:var(--text); margin-top:2px;">${total}</div>
+          <div style="font-size:10.5px; color:var(--green); font-weight:700; margin-top:2px;">En base de datos</div>
+        </div>
+        <div style="background:var(--s1); border:1px solid var(--border2); border-radius:14px; padding:14px; text-align:left;">
+          <div style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase;">⚡ Activos (Últimos 7 días)</div>
+          <div style="font-size:28px; font-weight:900; color:var(--accent); margin-top:2px;">${activeWeek}</div>
+          <div style="font-size:10.5px; color:var(--sub); font-weight:700; margin-top:2px;">${activeToday} hoy</div>
+        </div>
+        <div style="background:var(--s1); border:1px solid var(--border2); border-radius:14px; padding:14px; text-align:left;">
+          <div style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase;">🎓 Carreras Activas</div>
+          <div style="font-size:28px; font-weight:900; color:var(--text); margin-top:2px;">${careerList.length}</div>
+          <div style="font-size:10.5px; color:var(--sub); font-weight:700; margin-top:2px;">Especialidades Ulima</div>
+        </div>
+        <div style="background:var(--s1); border:1px solid var(--border2); border-radius:14px; padding:14px; text-align:left;">
+          <div style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase;">🎮 Jugadores Cachimbo</div>
+          <div style="font-size:28px; font-weight:900; color:#ec4899; margin-top:2px;">${cachimboPlayers}</div>
+          <div style="font-size:10.5px; color:var(--sub); font-weight:700; margin-top:2px;">Partidas iniciadas</div>
+        </div>
+      </div>
+
+      <!-- Distribución por Carrera -->
+      <div style="background:var(--s1); border:1px solid var(--border2); border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:10px;">
+        <div style="font-size:13px; font-weight:900; color:var(--text); display:flex; align-items:center; gap:6px;">
+          📊 Distribución por Carrera Universitaria
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+    `;
+
+    careerList.slice(0, 8).forEach(c => {
+      const pct = total > 0 ? Math.round((c.count / total) * 100) : 0;
+      html += `
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:800; margin-bottom:3px;">
+            <span style="color:var(--text);">${c.name}</span>
+            <span style="color:var(--sub);">${c.count} alumnos (${pct}%)</span>
+          </div>
+          <div style="width:100%; height:6px; background:var(--s2); border-radius:4px; overflow:hidden;">
+            <div style="width:${pct}%; height:100%; background:var(--accent); border-radius:4px;"></div>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `
+        </div>
+      </div>
+
+      <!-- Lista de Usuarios Registrados -->
+      <div style="background:var(--s1); border:1px solid var(--border2); border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div style="font-size:13px; font-weight:900; color:var(--text);">📋 Directorio de Usuarios (${users.length})</div>
+          <input type="text" id="adminUserSearchInput" placeholder="Buscar por correo o nombre..." oninput="filterAdminUsersTable()" style="padding:6px 12px; font-size:11.5px; border-radius:8px; background:var(--bg); border:1px solid var(--border2); color:var(--text); outline:none; min-width:160px;">
+        </div>
+
+        <div id="adminUsersTableCtn" style="display:flex; flex-direction:column; gap:8px;">
+    `;
+
+    users.forEach((u) => {
+      const name = u.displayName || (u.email ? u.email.split('@')[0] : 'Usuario');
+      const email = u.email || 'Sin correo registrado';
+      const initial = name.charAt(0).toUpperCase();
+      let car = u.career || 'Sin configurar';
+      if (typeof MALLAS !== 'undefined' && MALLAS[car] && MALLAS[car].label) car = MALLAS[car].label;
+      const lastStr = u.lastLogin ? new Date(u.lastLogin).toLocaleDateString('es-PE', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : 'Hace tiempo';
+      const cycles = u.cyclesCount || 0;
+
+      html += `
+        <div class="admin-user-row" data-search="${(name + ' ' + email + ' ' + car).toLowerCase()}" style="background:var(--bg); border:1px solid var(--border2); border-radius:12px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:180px;">
+            <div style="width:34px; height:34px; border-radius:50%; background:var(--s2); border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; color:var(--accent); flex-shrink:0;">
+              ${initial}
+            </div>
+            <div style="overflow:hidden;">
+              <div style="font-size:12.5px; font-weight:800; color:var(--text); text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${name}</div>
+              <div style="font-size:10.5px; color:var(--sub); text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${email}</div>
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span style="font-size:10px; background:var(--s2); border:1px solid var(--border2); color:var(--sub); padding:3px 8px; border-radius:6px; font-weight:700;">${car}</span>
+            <span style="font-size:10px; background:rgba(99,102,241,0.1); color:var(--accent); padding:3px 8px; border-radius:6px; font-weight:800;">${cycles} ciclos</span>
+            <span style="font-size:10px; color:var(--muted); font-weight:600;">🕒 ${lastStr}</span>
+            <button onclick="openAdminUserModal('${u.id}')" style="background:var(--s2); border:1px solid var(--border2); color:var(--text); border-radius:6px; padding:4px 8px; font-size:11px; font-weight:800; cursor:pointer;">👁️ Detalle</button>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `
+        </div>
+      </div>
+    `;
+
+    ctn.innerHTML = html;
+  } catch(e) {
+    console.warn('Error loading admin stats:', e);
+    ctn.innerHTML = `
+      <div style="text-align:center; padding:30px 20px; color:var(--red); background:var(--s1); border:1px solid var(--border2); border-radius:16px;">
+        <div style="font-size:32px; margin-bottom:8px;">⚠️</div>
+        <div style="font-size:13px; font-weight:800;">Error al cargar las métricas en tiempo real</div>
+        <div style="font-size:11px; color:var(--sub); margin-top:4px;">${e.message || 'Verifica tu conexión o permisos en Firestore.'}</div>
+        <button onclick="renderAdminStats()" class="btn btn-accent" style="margin-top:12px; font-size:11px; padding:6px 14px;">Reintentar</button>
+      </div>
+    `;
+  }
+};
+
+window.filterAdminUsersTable = function() {
+  const q = (document.getElementById('adminUserSearchInput')?.value || '').toLowerCase().trim();
+  const rows = document.querySelectorAll('.admin-user-row');
+  rows.forEach(r => {
+    const txt = r.getAttribute('data-search') || '';
+    if (!q || txt.includes(q)) {
+      r.style.display = 'flex';
+    } else {
+      r.style.display = 'none';
+    }
+  });
+};
+
+window.openAdminUserModal = function(uid) {
+  const u = _adminUsersData.find(x => x.id === uid);
+  if (!u) return;
+
+  const modalTitle = document.getElementById('adminUserModalTitle');
+  const modalBody = document.getElementById('adminUserModalBody');
+  if (!modalTitle || !modalBody) return;
+
+  const name = u.displayName || u.email || 'Usuario';
+  modalTitle.textContent = 'Detalle: ' + name;
+
+  let stateInfo = 'Sin ciclos registrados';
+  if (u.state && u.state.cycles) {
+    const cKeys = Object.keys(u.state.cycles);
+    stateInfo = `${cKeys.length} ciclos ingresados (${u.coursesCount || 0} cursos en total)`;
+  }
+
+  let simInfo = 'No ha iniciado partida en Cachimbo';
+  if (u.simGame && u.simGame.name) {
+    simInfo = `<b>${u.simGame.name}</b> (Ciclo ${u.simGame.ciclo || 1}, ${u.simGame.studies || 0}% Estudios, ${u.simGame.happiness || 0}% Ánimo)`;
+  }
+
+  modalBody.innerHTML = `
+    <div style="background:var(--s1); border:1px solid var(--border2); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:8px;">
+      <div style="font-size:13px; font-weight:900; color:var(--text);">${name}</div>
+      <div style="font-size:11px; color:var(--sub);">📧 <b>Correo:</b> ${u.email || 'No especificado'}</div>
+      <div style="font-size:11px; color:var(--sub);">🎓 <b>Carrera:</b> ${u.career || 'Sin configurar'}</div>
+      <div style="font-size:11px; color:var(--sub);">📅 <b>Último acceso:</b> ${u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'N/A'}</div>
+      <div style="font-size:11px; color:var(--sub);">🆔 <b>UID:</b> <code style="background:var(--s2); padding:2px 4px; border-radius:4px;">${u.id}</code></div>
+    </div>
+
+    <div style="background:var(--s1); border:1px solid var(--border2); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:6px;">
+      <div style="font-size:12px; font-weight:800; color:var(--text);">📚 Registro Académico</div>
+      <div style="font-size:11px; color:var(--sub);">${stateInfo}</div>
+    </div>
+
+    <div style="background:var(--s1); border:1px solid var(--border2); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:6px;">
+      <div style="font-size:12px; font-weight:800; color:var(--text);">🎮 Simulador Cachimbo</div>
+      <div style="font-size:11px; color:var(--sub);">${simInfo}</div>
+    </div>
+  `;
+
+  openSheet('adminUserModal');
+};
+
+window.renderAdminEvents = function() {
+  const ctn = document.getElementById('adminSheetContent');
+  if (!ctn) return;
+
+  ctn.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <!-- Switcher interno de Eventos vs Minijuegos -->
+      <div style="display:flex; background:var(--s2); border-radius:10px; padding:3px; gap:4px;">
+        <button id="devTabEventsBtn" onclick="switchDevViewerTab('events')" style="flex:1; padding:8px 12px; font-size:12px; font-weight:800; border-radius:8px; border:none; background:var(--s1); color:var(--text); cursor:pointer;">
+          📑 Eventos (${typeof simEvents !== 'undefined' ? simEvents.length : 0})
+        </button>
+        <button id="devTabMinigamesBtn" onclick="switchDevViewerTab('minigames')" style="flex:1; padding:8px 12px; font-size:12px; font-weight:800; border-radius:8px; border:none; background:transparent; color:var(--sub); cursor:pointer;">
+          🎮 Minijuegos de Prueba (${devMinigamesCatalog.length})
+        </button>
+      </div>
+
+      <!-- Filtros para Eventos -->
+      <div id="devEventsFilterRow" style="display:flex; gap:8px; flex-wrap:wrap;">
+        <input type="text" id="devSearchInput" placeholder="Buscar título, texto..." oninput="renderDevEventsList()" style="flex:1.4; min-width:130px; padding:8px 12px; font-size:11.5px; font-weight:700; border-radius:8px; background:var(--s1); border:1px solid var(--border2); color:var(--text); outline:none;">
+        <select id="devCareerSelect" onchange="renderDevEventsList()" style="flex:1.2; min-width:120px; padding:8px 8px; font-size:11.5px; font-weight:700; border-radius:8px; background:var(--s1); border:1px solid var(--border2); color:var(--text); outline:none;">
+          <option value="ALL">Todas las Carreras</option>
+          <option value="GENERAL">Generales (Todas)</option>
+        </select>
+        <select id="devCycleSelect" onchange="renderDevEventsList()" style="flex:0.8; min-width:80px; padding:8px 8px; font-size:11.5px; font-weight:700; border-radius:8px; background:var(--s1); border:1px solid var(--border2); color:var(--text); outline:none;">
+          <option value="ALL">Ciclos</option>
+          <option value="1">Ciclo 1</option><option value="2">Ciclo 2</option><option value="3">Ciclo 3</option><option value="4">Ciclo 4</option><option value="5">Ciclo 5</option>
+          <option value="6">Ciclo 6</option><option value="7">Ciclo 7</option><option value="8">Ciclo 8</option><option value="9">Ciclo 9</option><option value="10">Ciclo 10</option>
+        </select>
+        <select id="devMinigameFilterSelect" onchange="renderDevEventsList()" style="flex:1.1; min-width:130px; padding:8px 8px; font-size:11.5px; font-weight:700; border-radius:8px; background:var(--s1); border:1px solid var(--border2); color:var(--text); outline:none;">
+          <option value="ALL">🎲 Todos los Eventos</option>
+          <option value="NO_MG">📄 Sin Minijuego (Solo Decisiones)</option>
+          <option value="WITH_MG">🎮 Con Minijuego</option>
+        </select>
+      </div>
+
+      <div id="devViewerContent" style="display:flex; flex-direction:column; gap:12px; margin-top:6px;">
+        <!-- Inyectado dinámicamente -->
+      </div>
+    </div>
+  `;
+
+  const careerSelect = document.getElementById('devCareerSelect');
+  if (careerSelect && typeof simCareers !== 'undefined' && simCareers.length > 0) {
+      let opts = '<option value="ALL">Todas las Carreras</option><option value="GENERAL">Generales (Sin filtro)</option>';
+      simCareers.forEach(c => { opts += `<option value="${c}">${c}</option>`; });
+      careerSelect.innerHTML = opts;
+  }
+
+  renderDevEventsList();
+};
+
+window.renderAdminSuggestions = async function() {
+  const ctn = document.getElementById('adminSheetContent');
+  if (!ctn) return;
+
+  ctn.innerHTML = `
+    <div style="text-align:center; padding:30px 20px; color:var(--muted);">
+      <div class="spinner" style="margin:0 auto 10px auto; width:28px; height:28px; border:3px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+      <div style="font-size:12px; font-weight:800; color:var(--text);">Cargando sugerencias...</div>
+    </div>
+  `;
+
+  try {
+    if (!window._fbDb || !window._fbGetDocs || !window._fbCollection) {
+      throw new Error('Firestore no disponible');
+    }
+    const snap = await window._fbGetDocs(window._fbCollection(window._fbDb, 'suggestions'));
+    let items = [];
+    snap.forEach(d => items.push({ id: d.id, ...d.data() }));
+
+    if (items.length === 0) {
+      ctn.innerHTML = `
+        <div style="text-align:center; padding:40px 20px; color:var(--sub); background:var(--s1); border:1px solid var(--border2); border-radius:16px;">
+          <div style="font-size:36px; margin-bottom:8px;">💡</div>
+          <div style="font-size:14px; font-weight:800; color:var(--text);">No hay sugerencias registradas aún</div>
+          <div style="font-size:12px; margin-top:4px;">Los comentarios enviados por los alumnos aparecerán aquí.</div>
+        </div>
+      `;
+      return;
+    }
+
+    let html = `
+      <div style="font-size:13px; font-weight:900; color:var(--text); margin-bottom:4px;">
+        💡 Sugerencias y Comentarios de Usuarios (${items.length})
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+    `;
+
+    items.forEach(s => {
+      const text = s.text || s.message || s.sugerencia || 'Sin mensaje';
+      const dateStr = s.createdAt ? new Date(s.createdAt).toLocaleString() : 'Fecha desconocida';
+      const email = s.userEmail || s.email || 'Anónimo';
+
+      html += `
+        <div style="background:var(--s1); border:1px solid var(--border2); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:11px; font-weight:800; color:var(--accent);">👤 ${email}</span>
+            <span style="font-size:10px; color:var(--muted);">📅 ${dateStr}</span>
+          </div>
+          <div style="font-size:13px; color:var(--text); line-height:1.5; background:var(--bg); padding:10px 12px; border-radius:10px; border:1px solid var(--border2);">
+            ${text}
+          </div>
+          <div style="display:flex; justify-content:flex-end;">
+            <button onclick="deleteAdminSuggestion('${s.id}')" style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.3); color:var(--red); font-size:11px; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">
+              🗑️ Eliminar
+            </button>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+    ctn.innerHTML = html;
+  } catch(e) {
+    ctn.innerHTML = `
+      <div style="text-align:center; padding:30px 20px; color:var(--sub); background:var(--s1); border:1px solid var(--border2); border-radius:16px;">
+        <div style="font-size:32px; margin-bottom:8px;">💡</div>
+        <div style="font-size:13px; font-weight:800; color:var(--text);">Buzón de Sugerencias</div>
+        <div style="font-size:11px; color:var(--sub); margin-top:4px;">No se pudieron leer las sugerencias desde este cliente o no existen registros aún.</div>
+      </div>
+    `;
+  }
+};
+
+window.deleteAdminSuggestion = async function(id) {
+  if (!confirm('¿Seguro que deseas eliminar esta sugerencia?')) return;
+  try {
+    await window._fbDeleteDoc(window._fbDoc(window._fbDb, 'suggestions', id));
+    if (typeof showToast === 'function') showToast('Sugerencia eliminada');
+    renderAdminSuggestions();
+  } catch(e) {
+    alert('No se pudo eliminar: ' + e.message);
+  }
 };
 
 function updateDevViewerCounts() {
