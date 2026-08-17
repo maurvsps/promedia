@@ -9,6 +9,20 @@ let simEvents = [
     // ─── NUEVOS EVENTOS CON MINIJUEGOS VARIADOS ───
     {
         cycleRange: [1, 10],
+        emoji: "🔌", title: "Colapso de Red en el Pabellón H",
+        desc: "El examen final en línea está a punto de comenzar, pero el switch principal de red se ha desconectado. ¡Tienes que reconectar los nodos y tuberías de red rápidamente!",
+        choices: [
+            { 
+                text: "¡Conectar la red de fibra óptica!", 
+                minigame: "connect", 
+                winEffects: { study: +25, energy: -10, social: +10, money: 0 }, 
+                loseEffects: { study: -25, energy: -20, social: -5, money: 0 } 
+            },
+            { text: "Esperar que soporte técnico lo resuelva (Tarde)", effects: { study: -20, energy: +5, social: 0, money: 0 } }
+        ]
+    },
+    {
+        cycleRange: [1, 10],
         emoji: "⚡", title: "¡Pasa la Copia!",
         desc: "El examen final está imposible. Tu amigo de la fila de al lado tiene la respuesta de la pregunta 4 y te va a pasar el papelito. ¡Espera a que el profesor se distraiga!",
         choices: [
@@ -633,33 +647,138 @@ const newSimEvents = [
 
 
     simEvents.push(
-// --- RESCATE ---
+// --- RESCATE Y CRISIS ---
+    // --- RESCATE: DINERO (CRISIS DE FONDOS) ---
+    {
+        id: "rescue_money", title: "¡BANCARROTA TOTAL!", emoji: "💸", cycleRange: [1,10],
+        desc: "Te quedaste sin un sol en la billetera y en tu cuenta bancaria. Tienes que llamar llorando a tus papás para que te hagan una transferencia de emergencia.",
+        choices: [
+            { text: "Soportar el sermón familiar y recibir auxilio", effects: { money: 35, social: -15, energy: -10, study: 0 } }
+        ]
+    },
+    {
+        id: "rescue_money_pos", title: "¡TARJETA RECHAZADA!", emoji: "💳", cycleRange: [1,10],
+        desc: "El POS de la cafetería pitó en rojo y no tienes ni para el pasaje de regreso. Un compañero se apiada de ti y te invita el almuerzo y los pasajes de la semana.",
+        choices: [
+            { text: "Agradecer eternamente a tu salvador", effects: { money: 30, social: +10, energy: +10, study: -5 } }
+        ]
+    },
+    {
+        id: "rescue_money_sweets", title: "¡NEGOCIO CLANDESTINO!", emoji: "🍬", cycleRange: [1,10],
+        desc: "Sin un centavo, compraste gomitas al crédito y te pusiste a venderlas discretamente de salón en salón. ¡Se vendieron todas en tiempo récord!",
+        choices: [
+            { text: "Contar las monedas de ganancia", effects: { money: 40, energy: -15, social: +5, study: -10 } }
+        ]
+    },
+    {
+        id: "rescue_money_walk", title: "¡CAMINATA ÉPICA!", emoji: "👟", cycleRange: [1,10],
+        desc: "Sin saldo para el bus ni el corredor, te tocó caminar 10 kilómetros hasta tu casa reflexionando sobre cada sol mal gastado.",
+        choices: [
+            { text: "Llegar exhausto a casa pero reflexivo", effects: { money: 25, energy: -25, social: -10, study: +5 } }
+        ]
+    },
+    {
+        id: "rescue_money_notes", title: "¡VENTA DE RESÚMENES!", emoji: "📝", cycleRange: [1,10],
+        desc: "Tu billetera está vacía. Decides digitalizar tus apuntes y vender el PDF por Yape a los desesperados del curso antes del examen.",
+        choices: [
+            { text: "Monetizar tu sufrimiento académico", effects: { money: 45, energy: -15, study: +10, social: -5 } }
+        ]
+    },
+    {
+        id: "rescue_money_loan", title: "¡EMPEÑO ENTRE COMPAÑEROS!", emoji: "📱", cycleRange: [1,10],
+        desc: "Estás en quiebra total. Le vendes unos audífonos y tu calculadora científica antigua a un cachimbo para tener efectivo inmediato.",
+        choices: [
+            { text: "Aceptar el dinero de emergencia", effects: { money: 35, energy: -5, social: -10, study: 0 } }
+        ]
+    },
+
+    // --- RESCATE: ENERGÍA (CRISIS DE AGOTAMIENTO) ---
+    {
+        id: "rescue_energy", title: "¡COLAPSO POR AGOTAMIENTO!", emoji: "🚑", cycleRange: [1,10],
+        desc: "Te desmayaste en medio del pasillo por falta de sueño y estrés. Te despiertas en el tópico con suero y reposo obligatorio.",
+        choices: [
+            { text: "Dormir 2 días seguidos", effects: { energy: 40, study: -20, social: -10, money: -10 } }
+        ]
+    },
+    {
+        id: "rescue_energy_biblio", title: "¡DORMIDO EN LA BIBLIOTECA!", emoji: "😴", cycleRange: [1,10],
+        desc: "Te quedaste profundamente dormido con la cabeza sobre un tomo de física en el 4to piso. El vigilante te despierta a las 10 PM con compasión.",
+        choices: [
+            { text: "Despertar desorientado pero descansado", effects: { energy: 35, study: -15, social: -10, money: 0 } }
+        ]
+    },
+    {
+        id: "rescue_energy_caffeine", title: "¡INTOXICACIÓN DE ENERGIZANTES!", emoji: "⚡", cycleRange: [1,10],
+        desc: "Tomaste demasiadas latas de energizante seguidas para no dormirte y te dio taquicardia. El médico te prohíbe tocar café y te manda a descansar.",
+        choices: [
+            { text: "Tomar agua y dormir 16 horas seguidas", effects: { energy: 40, study: -25, social: -5, money: -15 } }
+        ]
+    },
+    {
+        id: "rescue_energy_flu", title: "¡GRIPE FULMINANTE!", emoji: "🤒", cycleRange: [1,10],
+        desc: "Tu sistema inmune se rindió tras tantas noches en vela. Caíste en cama con fiebre alta, sopa caliente y descanso forzoso.",
+        choices: [
+            { text: "Reposo médico obligatorio en cama", effects: { energy: 45, study: -20, social: -15, money: -10 } }
+        ]
+    },
+    {
+        id: "rescue_energy_reboot", title: "¡APAGÓN MENTAL!", emoji: "🧠", cycleRange: [1,10],
+        desc: "Entraste al salón de clase y no recordabas ni qué curso era ni qué día de la semana vivías. Un amigo te envía en taxi a tu casa a dormir.",
+        choices: [
+            { text: "Desconectar el cerebro hasta mañana", effects: { energy: 35, study: -15, social: +5, money: -10 } }
+        ]
+    },
+
+    // --- RESCATE: ESTUDIO (CRISIS ACADÉMICA) ---
     {
         id: "rescue_study", title: "¡ALERTA ACADÉMICA!", emoji: "🚨", cycleRange: [1,10],
-        desc: "Tus notas están por los suelos. Bienestar Estudiantil te ha citado y te obliga a asistir a tutorías intensivas de emergencia. Te salvas de la suspensión, pero a qué costo...",
+        desc: "Tus notas están por los suelos. Bienestar Estudiantil te ha citado y te obliga a asistir a tutorías intensivas de emergencia.",
         choices: [
-            { text: "Aceptar la tutoría intensiva", effects: { study: 25, energy: -20, social: -20, money: 0 } }
+            { text: "Aceptar la tutoría intensiva", effects: { study: 35, energy: -20, social: -20, money: 0 } }
         ]
     },
     {
-        id: "rescue_energy", title: "¡COLAPSO TOTAL!", emoji: "🚑", cycleRange: [1,10],
-        desc: "Te desmayaste en medio del pasillo por agotamiento. Te despiertas en la enfermería con suero. Vas a tener que descansar obligatoriamente.",
+        id: "rescue_study_miracle", title: "¡EL GRUPO SALVADOR!", emoji: "📚", cycleRange: [1,10],
+        desc: "Estás jalando todo. Un grupo de compañeros chancotas y estudiosos te adopta por solidaridad para estudiar todo el fin de semana sin parar.",
         choices: [
-            { text: "Dormir 2 días seguidos", effects: { energy: 30, study: -20, social: -10, money: -15 } }
+            { text: "Estudiar 48 horas seguidas con ellos", effects: { study: 40, energy: -25, social: +10, money: -10 } }
         ]
     },
     {
-        id: "rescue_money", title: "¡BANCARROTA!", emoji: "💸", cycleRange: [1,10],
-        desc: "Te quedaste sin un sol. Ni para el pasaje. Tienes que llamar llorando a tus papás para que te depositen de emergencia.",
+        id: "rescue_study_prof", title: "¡CONSEJO DEL PROFESOR!", emoji: "👨‍🏫", cycleRange: [1,10],
+        desc: "El profesor más estricto te llama al escritorio y te asigna un trabajo extraordinario de investigación para recuperar tu nota.",
         choices: [
-            { text: "Soportar el regaño familiar", effects: { money: 30, social: -15, energy: -10, study: 0 } }
+            { text: "Amanecerte redactando la monografía", effects: { study: 35, energy: -20, social: -10, money: 0 } }
         ]
     },
+    {
+        id: "rescue_study_flashcards", title: "¡MEMORIZACIÓN DE EMERGENCIA!", emoji: "⚡", cycleRange: [1,10],
+        desc: "Consigues un mazo de preguntas resueltas de los últimos ciclos y te encierras a memorizar conceptos como una máquina.",
+        choices: [
+            { text: "Memorizar todo el temario sin pestañear", effects: { study: 35, energy: -20, social: -10, money: 0 } }
+        ]
+    },
+
+    // --- RESCATE: SOCIAL (CRISIS DE AISLAMIENTO) ---
     {
         id: "rescue_social", title: "¡COMPLETO AISLAMIENTO!", emoji: "👻", cycleRange: [1,10],
-        desc: "Llevas semanas sin hablar con nadie. Hasta los profesores olvidaron cómo te llamas. Un compañero al azar se compadece de ti y te invita a su casa.",
+        desc: "Llevas semanas sin hablar con nadie. Hasta los profesores olvidaron cómo te llamas. Un compañero al azar se compadece de ti y te invita a su mesa.",
         choices: [
-            { text: "Aceptar la invitación de lástima", effects: { social: 25, study: -10, energy: -10, money: -5 } }
+            { text: "Aceptar la invitación y socializar", effects: { social: 35, study: -10, energy: -10, money: -5 } }
+        ]
+    },
+    {
+        id: "rescue_social_pichanga", title: "¡CONVOCATORIA A LA PICHANGA!", emoji: "⚽", cycleRange: [1,10],
+        desc: "Faltaba un integrante para completar el equipo de fútbol interfacultades y te jalan de urgencia a la cancha. ¡Conectas al instante!",
+        choices: [
+            { text: "Jugar y hacer amigos de inmediato", effects: { social: 40, energy: -20, study: -10, money: 0 } }
+        ]
+    },
+    {
+        id: "rescue_social_party", title: "¡INVITACIÓN INESPERADA!", emoji: "🥳", cycleRange: [1,10],
+        desc: "Crearon un grupo para ir a comer hamburguesas después de clases y te agregaron de casualidad. Decides ir y romper la timidez.",
+        choices: [
+            { text: "Ir a comer y romper el hielo", effects: { social: 35, energy: -10, study: -10, money: -15 } }
         ]
     },
 
@@ -684,14 +803,14 @@ const newSimEvents = [
 { cycleRange: [1,10], emoji: "🤓", title: "El Profe Barco", desc: "Ese profe que regala nota te llama para preguntarte un concepto básico.", choices: [ { text: "Responder rápido", minigame: "word", winEffects: { study: +15, energy: 0, social: +5, money: 0 }, loseEffects: { study: -10, energy: 0, social: -5, money: 0 } }, { text: "Decir que no sabes", effects: { study: -15, energy: 0, social: -5, money: 0 } } ] },
 { cycleRange: [2,8], emoji: "🛒", title: "Ofertón en Libros", desc: "Venden el libro original que necesitas a mitad de precio, pero sigue siendo caro.", choices: [ { text: "Romper el chanchito y comprarlo", effects: { study: +25, energy: 0, social: 0, money: -40 } }, { text: "Sacar copias pirata", effects: { study: +5, energy: -10, social: 0, money: -10 } } ] },
 { cycleRange: [1,10], emoji: "🤧", title: "Resfriado Inoportuno", desc: "Tienes fiebre y dolor de cabeza el día del parcial.", choices: [ { text: "Ir a dar el examen", minigame: "math2", mgEmoji: "🤧", mgTitle: "Examen con Fiebre", mgDesc: "Ajusta el presupuesto a pesar de tu dolor de cabeza.", winEffects: { study: +25, energy: -25, social: 0, money: 0 }, loseEffects: { study: -20, energy: -30, social: 0, money: 0 } }, { text: "Quedarte en cama y tramitar rezagado", effects: { study: -10, energy: +20, social: 0, money: -15 } } ] },
-{ cycleRange: [1,10], emoji: "🦟", title: "Mosquito en el Aula", desc: "Hay un zancudo molestando a toda la clase. Tienes que atraparlo.", choices: [ { text: "¡Atrápalo!", minigame: "catch", mgEmoji: "🦟", mgTitle: "Atrapar al Zancudo", mgDesc: "Espera a que el zancudo baje para aplastarlo.", winEffects: { social: +15, energy: -5, study: +5, money: 0 }, loseEffects: { social: -10, energy: -10, study: -5, money: 0 } }, { text: "Dejar que pique a los demás", effects: { social: -5, energy: 0, study: +5, money: 0 } } ] },
+{ cycleRange: [1,10], emoji: "🦟", title: "Mosquito en el Aula", desc: "Hay un zancudo molestando a toda la clase. ¡Toca o aplástalo antes de que te pique!", choices: [ { text: "¡Aplástalo!", minigame: "catch", mgEmoji: "🦟", mgTitle: "Atrapar al Zancudo", mgDesc: "Toca o aplasta al zancudo directamente en la pantalla antes de que escape.", winEffects: { social: +15, energy: -5, study: +5, money: 0 }, loseEffects: { social: -10, energy: -10, study: -5, money: 0 } }, { text: "Dejar que pique a los demás", effects: { social: -5, energy: 0, study: +5, money: 0 } } ] },
 { cycleRange: [3,10], emoji: "💔", title: "Ruptura Amorosa", desc: "Tu crush te acaba de decir que solo te ve como amigo.", choices: [ { text: "Ahogar las penas en fiesta", effects: { social: +30, energy: -20, study: -20, money: -30 } }, { text: "Enfocarte 100% en el estudio (Villain Arc)", effects: { social: -25, energy: 0, study: +35, money: 0 } } ] },
 { cycleRange: [1,10], emoji: "🎨", title: "Feria de Arte", desc: "Hay una feria de arte en la rotonda y puedes participar pintando.", choices: [ { text: "Relajarte pintando un rato", effects: { energy: +20, social: +10, study: -15, money: 0 } }, { text: "Comprar una pulsera bonita", effects: { energy: +5, social: +5, study: 0, money: -15 } }, { text: "No tienes tiempo para eso", effects: { energy: -5, social: -5, study: +10, money: 0 } } ] },
 { cycleRange: [4,10], emoji: "😠", title: "Grupo Flojo", desc: "Tus compañeros de grupo no han avanzado nada y se entrega mañana.", choices: [ { text: "Gritarles y obligarlos a trabajar", minigame: "spam", mgEmoji: "😠", mgTitle: "¡Trabajen Flojos!", mgDesc: "Toca rápidamente para despertar a tu grupo.", winEffects: { social: -10, study: +20, energy: -15, money: 0 }, loseEffects: { social: -20, study: -15, energy: -25, money: 0 } }, { text: "Hacerlo todo tú solo (Otra vez)", effects: { social: -10, study: +25, energy: -35, money: 0 } } ] },
 { cycleRange: [2,8], emoji: "👗", title: "Ropa Sucia", desc: "Se te acabó la ropa limpia y tienes que lavar.", choices: [ { text: "Lavar a mano (Demora mucho)", effects: { energy: -20, study: -10, social: 0, money: 0 } }, { text: "Mandar todo a la lavandería", effects: { energy: 0, study: +5, social: 0, money: -25 } } ] },
 { cycleRange: [1,10], emoji: "🧮", title: "Error en el Sistema", desc: "El sistema calculó mal tus faltas y te quieren inhabilitar del curso.", choices: [ { text: "Hacer el reclamo formal", minigame: "order_steps", mgEmoji: "🧮", mgTitle: "Trámite de Reclamo", mgDesc: "Sigue los pasos correctos para que el sistema te acepte.", winEffects: { study: +15, energy: -10, social: 0, money: 0 }, loseEffects: { study: -25, energy: -20, social: 0, money: 0 } }, { text: "Pagar el trámite de reconsideración", effects: { study: +10, energy: 0, social: 0, money: -30 } } ] },
 { cycleRange: [1,10], emoji: "🐾", title: "Caca de Paloma", desc: "Una paloma te arruinó la camiseta justo cuando ibas a exponer.", choices: [ { text: "Exponer con la mancha", effects: { social: -20, study: +10, energy: -10, money: 0 } }, { text: "Comprar polera de la U de emergencia", effects: { social: +10, study: 0, energy: 0, money: -40 } } ] },
-{ cycleRange: [1,10], emoji: "🚖", title: "Tráfico Infernal", desc: "Estás atrapado en Javier Prado y el examen empieza en 10 minutos.", choices: [ { text: "Bajar y correr", minigame: "timing", mgEmoji: "🏃", mgTitle: "Carrera Contra el Tiempo", mgDesc: "Esquiva a la gente frenando en el momento exacto.", winEffects: { energy: -25, study: +15, social: 0, money: 0 }, loseEffects: { energy: -35, study: -20, social: 0, money: 0 } }, { text: "Aceptar tu destino en el taxi", effects: { energy: 0, study: -25, social: 0, money: -15 } } ] },
+{ cycleRange: [1,10], emoji: "🚖", title: "Tráfico Infernal", desc: "Estás atrapado en Javier Prado y el examen empieza en 10 minutos.", choices: [ { text: "Bajar y esquivar a la gente corriendo", minigame: "dodge", mgEmoji: "🏃", mgTitle: "Esquivar Peatones en Javier Prado", mgDesc: "Cambia de carril para esquivar a los peatones y llegar al campus a tiempo.", winEffects: { energy: -20, study: +20, social: 0, money: 0 }, loseEffects: { energy: -35, study: -25, social: 0, money: 0 } }, { text: "Aceptar tu destino en el taxi", effects: { energy: 0, study: -25, social: 0, money: -15 } } ] },
 { cycleRange: [5,10], emoji: "👔", title: "Entrevista de Prácticas", desc: "Te llamaron para tu primera entrevista de trabajo.", choices: [ { text: "Prepararte a full", minigame: "word", mgEmoji: "💼", mgTitle: "Entrevista Laboral", mgDesc: "Forma la palabra clave para impresionar al reclutador.", winEffects: { study: +20, social: +15, energy: -20, money: +50 }, loseEffects: { study: -10, social: -15, energy: -20, money: 0 } }, { text: "Ir a ver qué sale", effects: { study: 0, social: +5, energy: -5, money: 0 } } ] },
 { cycleRange: [1,10], emoji: "🎁", title: "Cumpleaños del Profe", desc: "Tu salón organizó una cuota para comprarle un regalo al profe.", choices: [ { text: "Colaborar con 20 soles", effects: { social: +15, study: +10, energy: 0, money: -20 } }, { text: "Hacerte el desentendido", effects: { social: -15, study: -5, energy: 0, money: 0 } } ] },
 { cycleRange: [1,10], emoji: "📸", title: "Foto para el Carnet", desc: "Están tomando fotos para renovar el carnet universitario.", choices: [ { text: "Arreglarte bien", minigame: "sequence", mgEmoji: "📸", mgTitle: "Foto para el Carnet", mgDesc: "Sigue la secuencia de poses para la foto perfecta.", winEffects: { social: +20, energy: -5, study: 0, money: 0 }, loseEffects: { social: -15, energy: -5, study: 0, money: 0 } }, { text: "Ir así nomás", effects: { social: -10, energy: 0, study: 0, money: 0 } } ] }
@@ -868,3 +987,321 @@ simEvents.push({
         { text: "Preguntarle algo al profe", effects: { study: 15, social: 5 } }
     ]
 });
+
+// ─── 20 NUEVOS EVENTOS CON MINIJUEGOS ───
+simEvents.push(
+    {
+        cycleRange: [1, 10], emoji: "🗣️", title: "Debate en Clase", desc: "El profesor te pide debatir un tema controversial con un compañero. Tienes que ganarle en argumentos.",
+        choices: [ { text: "Debatir con todo", minigame: "rps", winEffects: { study: +15, social: +10, energy: -10 }, loseEffects: { study: -10, social: -5, energy: -15 } }, { text: "Quedarte callado", effects: { study: -15, social: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "🍀", title: "Sorteo de Becas", desc: "Hay un sorteo relámpago para una beca parcial en la cafetería. ¡Lanza la moneda!",
+        choices: [ { text: "Participar", minigame: "coin_flip", winEffects: { money: +50, energy: -5 }, loseEffects: { money: -5, energy: -5 } }, { text: "No creo en la suerte", effects: { energy: +5 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "🎰", title: "Ruleta de Matrícula", desc: "El sistema de matrícula ha colapsado y tu turno es al azar. ¡Detén la ruleta en el mejor momento!",
+        choices: [ { text: "Girar la ruleta", minigame: "roulette", winEffects: { study: +20, energy: +10 }, loseEffects: { study: -20, energy: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "🧠", title: "Test Psicológico", desc: "Participas en un experimento de la facultad de Psicología. Quieren probar tus reflejos cognitivos.",
+        choices: [ { text: "Hacer el test", minigame: "color_match", winEffects: { study: +20, money: +10 }, loseEffects: { study: -10, energy: -10 } }, { text: "Pasar", effects: { social: -5 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "🎤", title: "Concurso de Trivia", desc: "Estás en el patio y te invitan a un concurso rápido de conocimientos universitarios.",
+        choices: [ { text: "Participar", minigame: "quiz", winEffects: { social: +20, money: +20, study: +10 }, loseEffects: { social: -10, money: -5 } }, { text: "Mirar de lejos", effects: { energy: +5 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "🔢", title: "Pizarra en Blanco", desc: "El profesor de matemáticas te llama a la pizarra para resolver una secuencia lógica.",
+        choices: [ { text: "Ir a la pizarra", minigame: "math_sequence", winEffects: { study: +25, social: +10 }, loseEffects: { study: -20, social: -10 } }, { text: "Fingir desmayo", effects: { study: -10, social: -15, energy: -5 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "🔥", title: "Alarma de Incendio", desc: "¡Suena la alarma en pleno simulacro! Debes reaccionar al instante para salir rápido.",
+        choices: [ { text: "Correr a la salida", minigame: "reaction", winEffects: { energy: -10, social: +10 }, loseEffects: { energy: -25, social: -15 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "🎛️", title: "Ajuste de Presupuesto", desc: "El grupo de trabajo te encargó cuadrar el presupuesto exacto para la maqueta.",
+        choices: [ { text: "Ajustar al centro", minigame: "slider_center", winEffects: { study: +15, money: +15 }, loseEffects: { study: -10, money: -25 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "🎈", title: "Preparativos de Fiesta", desc: "Te ofreciste a ayudar a inflar globos para la fiesta de la facultad.",
+        choices: [ { text: "Inflar los globos", minigame: "pump", winEffects: { social: +25, energy: -20 }, loseEffects: { social: -10, energy: -25 } }, { text: "Decir que te duele la cabeza", effects: { social: -15, energy: +10 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "🤝", title: "Negociación de Notas", desc: "Estás debatiendo con el profesor por ese medio punto que te falta para aprobar.",
+        choices: [ { text: "Debatir el punto", minigame: "rps", winEffects: { study: +20, energy: -10 }, loseEffects: { study: -20, energy: -20 } }, { text: "Aceptar tu nota", effects: { study: -10, energy: +5 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "🪙", title: "Decisión Importante", desc: "Tienes dos exposiciones el mismo día. Echas a la suerte a cuál le dedicarás más tiempo.",
+        choices: [ { text: "Lanzar moneda", minigame: "coin_flip", winEffects: { study: +15, energy: -5 }, loseEffects: { study: -15, energy: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "🎡", title: "Feria Universitaria", desc: "Hay una feria en el campus y puedes ganar premios si detienes la ruleta en el lugar correcto.",
+        choices: [ { text: "Probar suerte", minigame: "roulette", winEffects: { social: +10, money: +25 }, loseEffects: { money: -10, energy: -5 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "👁️", title: "Falla en la Matrix", desc: "Estudiaste tantas horas seguidas que empiezas a confundir los colores de tus resaltadores.",
+        choices: [ { text: "Concentrarte al máximo", minigame: "color_match", winEffects: { study: +15, energy: -15 }, loseEffects: { study: -15, energy: -25 } }, { text: "Irte a dormir", effects: { study: -10, energy: +25 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "🤓", title: "Pregunta Sorpresa", desc: "El decano está de visita y hace una pregunta abierta a tu clase.",
+        choices: [ { text: "Responder rápido", minigame: "quiz", winEffects: { study: +25, social: +20 }, loseEffects: { study: -10, social: -15 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "📉", title: "Fórmula Extraviada", desc: "En pleno examen de estadística, te olvidas la última parte de la fórmula.",
+        choices: [ { text: "Deducir la secuencia", minigame: "math_sequence", winEffects: { study: +25, energy: -15 }, loseEffects: { study: -25, energy: -15 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "⚽", title: "Arquero Substituto", desc: "Faltó el arquero en la pichanga de la facultad y te mandan al arco.",
+        choices: [ { text: "Demostrar tus reflejos", minigame: "reaction", winEffects: { social: +25, energy: -20 }, loseEffects: { social: -15, energy: -25 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "🎸", title: "Afinar Instrumentos", desc: "Estás en el club de música y necesitan que alguien afine la guitarra principal.",
+        choices: [ { text: "Afinar con precisión", minigame: "slider_center", winEffects: { social: +20, energy: -10 }, loseEffects: { social: -10, energy: -15 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "💨", title: "Tomar Aire", desc: "Estás a punto de dar la exposición final más importante del ciclo. Necesitas calmar tus nervios.",
+        choices: [ { text: "Respirar profundo", minigame: "pump", winEffects: { study: +20, energy: +10 }, loseEffects: { study: -15, energy: -20 } }, { text: "Entrar en pánico", effects: { study: -20, energy: -15, social: -5 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "🤺", title: "Discusión por Comida", desc: "Solo queda un menú económico en la cafetería y llegaste al mismo tiempo que otro alumno.",
+        choices: [ { text: "Jugarlo a piedra papel o tijeras", minigame: "rps", winEffects: { money: +15, energy: +15 }, loseEffects: { money: -15, energy: -10 } }, { text: "Cederle el turno", effects: { social: +10, energy: -10, money: -5 } } ]
+    },
+    {
+        cycleRange: [1, 10], emoji: "🚦", title: "Cruzar Javier Prado", desc: "El semáforo está a punto de cambiar y vas tarde a clase. Tienes que arrancar en el milisegundo exacto.",
+        choices: [ { text: "Reaccionar a la luz verde", minigame: "reaction", winEffects: { study: +10, energy: -10 }, loseEffects: { study: -15, energy: -25 } } ]
+    }
+);
+
+// ─── EVENTOS ESPECÍFICOS POR CARRERA Y GÉNERO ───
+simEvents.push(
+    // ═══════════════════════════════════════════════════
+    // 💻 INGENIERÍA DE SISTEMAS (8 EVENTOS EXCLUSIVOS)
+    // ═══════════════════════════════════════════════════
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería de Sistemas"], emoji: "💻", title: "Hackathon de Madrugada", desc: "La facultad organizó una hackathon de 24 horas y tu equipo se está durmiendo. Tú eres el único que sabe React.",
+        choices: [ { text: "Escribir código a la velocidad de la luz", minigame: "typing", winEffects: { study: +25, energy: -20 }, loseEffects: { study: -10, energy: -30 } }, { text: "Dormir un rato debajo de la mesa", effects: { energy: +20, study: -15, social: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería de Sistemas"], emoji: "🔌", title: "Servidor Caído en AWS", desc: "El servidor del proyecto final colapsó a dos horas de la presentación. Tienes que reiniciar los contenedores de Docker antes del desastre.",
+        choices: [ { text: "Reconectar los nodos de red", minigame: "connect", winEffects: { study: +20, social: +10 }, loseEffects: { study: -25, social: -15 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería de Sistemas"], emoji: "🐛", title: "Bug en Producción", desc: "A las 11:59 PM descubres un NullPointerException crítico en el repositorio principal del grupo antes de la entrega.",
+        choices: [ { text: "Encontrar la línea defectuosa", minigame: "reaction", winEffects: { study: +20, energy: -10 }, loseEffects: { study: -20, energy: -15 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería de Sistemas"], emoji: "🤖", title: "Entrenamiento de Modelo IA", desc: "Tu red neuronal profunda en Python se quedó estancada en un mínimo local. Tienes que ajustar los hiperparámetros de inmediato.",
+        choices: [ { text: "Calibrar la tasa de aprendizaje", minigame: "slider_center", winEffects: { study: +25, money: +10 }, loseEffects: { study: -15, energy: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería de Sistemas"], emoji: "🗄️", title: "Inyección SQL de Prueba", desc: "En la clase de Ciberseguridad debes hacer un test de vulnerabilidad simulado a una plataforma antes de que venza el contador.",
+        choices: [ { text: "Resolver la secuencia del script", minigame: "math_sequence", winEffects: { study: +20, social: +15 }, loseEffects: { study: -15, social: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería de Sistemas"], emoji: "🚀", title: "Entrevista en Startup Unicornio", desc: "Una startup de Silicon Valley busca pasantes de Sistemas Ulima. Te toman una prueba en vivo de estructura de datos.",
+        choices: [ { text: "Responder las preguntas del tech lead", minigame: "quiz", winEffects: { money: +35, study: +15 }, loseEffects: { money: -10, study: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería de Sistemas"], emoji: "🛡️", title: "Ataque DDoS en el Laboratorio", desc: "Una inundación de tráfico falso está bloqueando la red del laboratorio informático. Debes filtrar las IPs atacantes.",
+        choices: [ { text: "Piedra, papel o tijera contra el bot", minigame: "rps", winEffects: { study: +20, energy: -5 }, loseEffects: { study: -15, energy: -15 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería de Sistemas"], emoji: "🔥", title: "Deploy en Viernes por la Tarde", desc: "Tu jefe de prácticas insiste en subir la actualización del sistema el viernes a las 6:00 PM. Una ruleta de la suerte decidirá si explota el servidor.",
+        choices: [ { text: "Girar la ruleta del despliegue", minigame: "roulette", winEffects: { money: +25, study: +15 }, loseEffects: { energy: -25, study: -15 } } ]
+    },
+
+    // ═══════════════════════════════════════════════════
+    // ⚙️ INGENIERÍA INDUSTRIAL (8 EVENTOS EXCLUSIVOS)
+    // ═══════════════════════════════════════════════════
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Industrial"], emoji: "⚙️", title: "Optimización de Tiempos", desc: "El profesor de Estudio del Trabajo te pide cronometrar un proceso logístico en la planta de manufactura simulada.",
+        choices: [ { text: "Medir con precisión exacta", minigame: "reaction", winEffects: { study: +20, energy: -10 }, loseEffects: { study: -15, energy: -15 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Industrial"], emoji: "📊", title: "Calidad Seis Sigma", desc: "En tu clase de Gestión de Calidad, debes encontrar la pieza defectuosa en una línea de producción de alta velocidad.",
+        choices: [ { text: "Girar la ruleta de inspección", minigame: "roulette", winEffects: { study: +15, money: +10 }, loseEffects: { study: -10, energy: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Industrial"], emoji: "🏭", title: "Cuello de Botella en Planta", desc: "La línea de empaque está saturada por un retraso en la faja transportadora. Debes equilibrar la velocidad de los operarios.",
+        choices: [ { text: "Ajustar el ritmo al centro", minigame: "slider_center", winEffects: { study: +20, social: +10 }, loseEffects: { study: -15, energy: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Industrial"], emoji: "📦", title: "Inventario Descuadrado", desc: "El kardex del almacén no coincide con el conteo físico por 500 unidades. Tienes que rastrear la ecuación del lote perdido.",
+        choices: [ { text: "Calcular el número faltante", minigame: "math_sequence", winEffects: { study: +20, money: +15 }, loseEffects: { study: -15, money: -15 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Industrial"], emoji: "📋", title: "Auditoría de Norma ISO 9001", desc: "Llega un auditor externo a revisar los diagramas de flujo de tu proyecto. Tienes que responder sus objeciones con firmeza.",
+        choices: [ { text: "Responder la trivia normativa", minigame: "quiz", winEffects: { study: +25, social: +10 }, loseEffects: { study: -20, social: -15 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Industrial"], emoji: "🚚", title: "Ruta de Distribución Eficiente", desc: "Debes conectar la red de camiones entre los almacenes de Lima y Provincias reduciendo el costo de combustible.",
+        choices: [ { text: "Conectar los puntos logísticos", minigame: "connect", winEffects: { money: +30, study: +10 }, loseEffects: { money: -20, study: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Industrial"], emoji: "🤝", title: "Negociación con Sindicato", desc: "Los operarios de la planta piloto piden mejoras en los turnos. Tienes que negociar un acuerdo ganar-ganar.",
+        choices: [ { text: "Piedra, papel o tijera estratégico", minigame: "rps", winEffects: { social: +25, study: +10 }, loseEffects: { social: -15, energy: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Industrial"], emoji: "⏱️", title: "Certificación Kaizen", desc: "Para obtener la beca de especialización debes transcribir las 5S de la metodología japonesa sin cometer ningún error de tipeo.",
+        choices: [ { text: "Escribir los principios sin titubear", minigame: "typing", winEffects: { study: +25, energy: -10 }, loseEffects: { study: -15, energy: -15 } } ]
+    },
+
+    // ═══════════════════════════════════════════════════
+    // 🏗️ INGENIERÍA CIVIL (8 EVENTOS EXCLUSIVOS)
+    // ═══════════════════════════════════════════════════
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Civil"], emoji: "🏗️", title: "Mezcla de Concreto", desc: "En el laboratorio de materiales, debes calcular el porcentaje exacto de agua y cemento para que la probeta no se rompa.",
+        choices: [ { text: "Ajustar la proporción al medio", minigame: "slider_center", winEffects: { study: +20, energy: -5 }, loseEffects: { study: -20, energy: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Civil"], emoji: "🌉", title: "Cálculo de Estructuras", desc: "Te dan una serie de cargas sobre un puente y debes hallar el valor de la reacción faltante antes de que el puente colapse en la simulación.",
+        choices: [ { text: "Completar la fórmula matemática", minigame: "math_sequence", winEffects: { study: +25, energy: -15 }, loseEffects: { study: -20, energy: -15 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Civil"], emoji: "📐", title: "Levantamiento Topográfico", desc: "Bajo el sol de mediodía en la cancha de la Ulima, debes enfocar el teodolito justo en la mira antes de que cambie la luz.",
+        choices: [ { text: "Capturar el instante exacto", minigame: "reaction", winEffects: { study: +20, energy: -10 }, loseEffects: { study: -15, energy: -15 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Civil"], emoji: "🪨", title: "Muestra de Suelo Arcilloso", desc: "En el curso de Geotecnia debes clasificar una muestra de terreno según la escala de plasticidad de Casagrande.",
+        choices: [ { text: "Responder el test de suelo", minigame: "quiz", winEffects: { study: +20, social: +5 }, loseEffects: { study: -15, energy: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Civil"], emoji: "🖥️", title: "Modelado BIM 3D", desc: "Debes digitalizar los planos de un edificio de 20 pisos en Revit antes del mediodía.",
+        choices: [ { text: "Tipear las coordenadas del plano", minigame: "typing", winEffects: { study: +25, energy: -15 }, loseEffects: { study: -15, energy: -20 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Civil"], emoji: "⚡", title: "Conexión de Red de Tuberías", desc: "En Hidráulica debes trazar el circuito de tuberías de agua potable sin que se produzca un golpe de ariete.",
+        choices: [ { text: "Conectar los tubos de la red", minigame: "connect", winEffects: { study: +20, money: +10 }, loseEffects: { study: -20, money: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Civil"], emoji: "📑", title: "Licencia de Obra en la Municipalidad", desc: "El funcionario municipal pone trabas al expediente técnico. Tienes que convencerlo de firmar la autorización.",
+        choices: [ { text: "Piedra, papel o tijera burocrático", minigame: "rps", winEffects: { money: +25, social: +15 }, loseEffects: { money: -15, social: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Civil"], emoji: "🌕", title: "Vaciado de Techo Nocturno", desc: "Llegó el mixer de concreto a las 2:00 AM. La suerte dirá si la resistencia f'c alcanza los 210 kg/cm2 pactados.",
+        choices: [ { text: "Probar la ruleta del laboratorio", minigame: "roulette", winEffects: { money: +30, study: +10 }, loseEffects: { energy: -25, money: -15 } } ]
+    },
+
+    // ═══════════════════════════════════════════════════
+    // 🦾 INGENIERÍA MECATRÓNICA (8 EVENTOS EXCLUSIVOS)
+    // ═══════════════════════════════════════════════════
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Mecatrónica"], emoji: "🦾", title: "Calibrar Brazo Robótico", desc: "El brazo robótico del laboratorio está descalibrado. Tienes que mover las articulaciones a su posición central de equilibrio.",
+        choices: [ { text: "Calibrar ejes al centro", minigame: "slider_center", winEffects: { study: +20, social: +5 }, loseEffects: { study: -15, energy: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Mecatrónica"], emoji: "🧩", title: "Circuito Impreso PCB", desc: "Tienes que soldar las pistas de un circuito impreso antes de que el estaño se enfríe y haga cortocircuito.",
+        choices: [ { text: "Conectar las pistas electrónicas", minigame: "connect", winEffects: { study: +25, energy: -15 }, loseEffects: { study: -20, energy: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Mecatrónica"], emoji: "⚡", title: "Chispa en el Microcontrolador", desc: "Conectaste al revés el pin de 5V del Arduino. Tienes milisegundos para desconectar el cable antes de fundir la placa.",
+        choices: [ { text: "Desconectar de un tirón", minigame: "reaction", winEffects: { money: +20, study: +10 }, loseEffects: { money: -25, study: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Mecatrónica"], emoji: "🤖", title: "Torneo de Sumo Robot", desc: "Tu robot autónomo se enfrenta en el dojo de la facultad contra el campeón del ciclo pasado.",
+        choices: [ { text: "Piedra, papel o tijera robótico", minigame: "rps", winEffects: { social: +25, study: +15 }, loseEffects: { social: -15, study: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Mecatrónica"], emoji: "📟", title: "Lógica LADDER en PLC", desc: "Debes programar la secuencia de automatización de una faja embotelladora en la interfaz industrial.",
+        choices: [ { text: "Completar la secuencia numérica", minigame: "math_sequence", winEffects: { study: +20, money: +10 }, loseEffects: { study: -15, money: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Mecatrónica"], emoji: "🖨️", title: "Impresión 3D de Gripper", desc: "Estás fabricando una pinza mecánica en filamento de carbono. El código G-Code requiere el ingreso exacto de parámetros.",
+        choices: [ { text: "Tipear la configuración G-Code", minigame: "typing", winEffects: { study: +20, energy: -10 }, loseEffects: { study: -15, energy: -15 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Mecatrónica"], emoji: "📡", title: "Visión por Computadora", desc: "El algoritmo de OpenCV debe reconocer los objetos defectuosos que pasan por la cámara industrial.",
+        choices: [ { text: "Responder el test de algoritmos", minigame: "quiz", winEffects: { study: +25, social: +5 }, loseEffects: { study: -15, energy: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Mecatrónica"], emoji: "🛸", title: "Vuelo de Dron Autónomo", desc: "Un fallo electromagnético hace temblar los motores del cuadricóptero. La ruleta dirá si aterriza sano o se estrella.",
+        choices: [ { text: "Probar el aterrizaje de emergencia", minigame: "roulette", winEffects: { study: +20, money: +15 }, loseEffects: { money: -30, energy: -15 } } ]
+    },
+
+    // ═══════════════════════════════════════════════════
+    // 🧪 INGENIERÍA AMBIENTAL (8 EVENTOS EXCLUSIVOS)
+    // ═══════════════════════════════════════════════════
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Ambiental"], emoji: "🧪", title: "Titulación Química", desc: "Estás en el laboratorio de química ambiental. Debes soltar la gota exacta de reactivo para que la muestra cambie de color sin pasarte.",
+        choices: [ { text: "Tener pulso de cirujano", minigame: "reaction", winEffects: { study: +20, energy: -5 }, loseEffects: { study: -20, energy: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Ambiental"], emoji: "🌍", title: "Impacto Ambiental", desc: "Debes convencer a un comité evaluador de que tu proyecto de biorremediación es mejor que el de la otra consultora.",
+        choices: [ { text: "Argumentar con el comité", minigame: "rps", winEffects: { study: +15, social: +15 }, loseEffects: { study: -15, social: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Ambiental"], emoji: "🍃", title: "Monitoreo de Calidad de Aire", desc: "Colocas un sensor de partículas PM2.5 en la Av. Javier Prado y debes ajustar la calibración al valor de referencia.",
+        choices: [ { text: "Centrar la aguja de medición", minigame: "slider_center", winEffects: { study: +20, social: +10 }, loseEffects: { study: -15, energy: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Ambiental"], emoji: "💧", title: "Red de Tratamiento de Aguas", desc: "Debes conectar los filtros de carbón activado y membranas de osmosis inversa para purificar el efluente.",
+        choices: [ { text: "Conectar los filtros de purificación", minigame: "connect", winEffects: { study: +25, money: +10 }, loseEffects: { study: -20, money: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Ambiental"], emoji: "📊", title: "Cálculo de Huella de Carbono", desc: "Te piden calcular la huella de CO2 equivalente de toda la flota de transportes del campus.",
+        choices: [ { text: "Escribir la fórmula de emisiones", minigame: "typing", winEffects: { study: +20, energy: -10 }, loseEffects: { study: -15, energy: -15 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Ambiental"], emoji: "🔍", title: "Fiscalización de OEFA", desc: "Llegan inspectores ambientales de sorpresa a verificar la gestión de residuos peligrosos en el laboratorio.",
+        choices: [ { text: "Responder la auditoría ambiental", minigame: "quiz", winEffects: { study: +25, social: +10 }, loseEffects: { study: -20, social: -15 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Ambiental"], emoji: "🌱", title: "Crecimiento de Biomasa", desc: "Debes determinar el patrón exponencial de reproducción de bacterias en un biorreactor de suelo contaminado.",
+        choices: [ { text: "Resolver la progresión biológica", minigame: "math_sequence", winEffects: { study: +20, money: +10 }, loseEffects: { study: -15, money: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Ingeniería Ambiental"], emoji: "☀️", title: "Licitación de Parque Eólico", desc: "Compites contra otras universidades para ganar el fondo de innovación del Ministerio del Ambiente.",
+        choices: [ { text: "Girar la ruleta del jurado evaluador", minigame: "roulette", winEffects: { money: +35, study: +10 }, loseEffects: { money: -15, energy: -15 } } ]
+    },
+
+    // ═══════════════════════════════════════════════════
+    // 💼 ADMINISTRACIÓN Y ECONOMÍA (8 EVENTOS EXCLUSIVOS)
+    // ═══════════════════════════════════════════════════
+    {
+        cycleRange: [1, 10], careers: ["Administración", "Economía"], emoji: "📉", title: "Caída de la Bolsa", desc: "Estás en el simulador de negocios y las acciones de tu empresa caen en picada. Tienes milisegundos para vender todo.",
+        choices: [ { text: "Vender acciones rápido", minigame: "reaction", winEffects: { money: +30, study: +10 }, loseEffects: { money: -30, energy: -15 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Administración", "Economía"], emoji: "👔", title: "Presentación a Inversores", desc: "El jurado de Shark Tank Ulima quiere saber el ROI exacto de tu proyecto de fin de ciclo, o no te aprobarán.",
+        choices: [ { text: "Demostrar los estados financieros", minigame: "quiz", winEffects: { study: +25, social: +10 }, loseEffects: { study: -20, social: -15 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Administración", "Economía"], emoji: "🚀", title: "Pitch de Startup en Vivo", desc: "Tienes 60 segundos para presentar tu modelo de negocio Canvas ante fondos de capital de riesgo.",
+        choices: [ { text: "Tipear el discurso impecable", minigame: "typing", winEffects: { money: +35, social: +15 }, loseEffects: { money: -15, social: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Administración", "Economía"], emoji: "📊", title: "Simulador Cesim de Negocios", desc: "Debes ajustar el precio de venta y la inversión en marketing para maximizar la cuota de mercado de tu grupo.",
+        choices: [ { text: "Equilibrar el margen de ganancia", minigame: "slider_center", winEffects: { money: +25, study: +15 }, loseEffects: { money: -20, study: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Administración", "Economía"], emoji: "📈", title: "Pronóstico de Ventas", desc: "Debes hallar el siguiente número en la tendencia proyectada de ingresos para el próximo trimestre.",
+        choices: [ { text: "Completar la proyección de la serie", minigame: "math_sequence", winEffects: { study: +20, money: +15 }, loseEffects: { study: -15, money: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Administración", "Economía"], emoji: "🤝", title: "Fusión y Adquisición Empresarial", desc: "Negocias el porcentaje de participación accionaria con el CEO de una empresa competidora.",
+        choices: [ { text: "Piedra, papel o tijera corporativo", minigame: "rps", winEffects: { social: +20, money: +20 }, loseEffects: { social: -15, money: -15 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Administración", "Economía"], emoji: "📑", title: "Flujo de Carga de Cadena Logística", desc: "Conecta los nodos de la cadena de suministro desde los distribuidores hasta las tiendas de retail.",
+        choices: [ { text: "Conectar los distribuidores", minigame: "connect", winEffects: { money: +25, study: +10 }, loseEffects: { money: -20, study: -10 } } ]
+    },
+    {
+        cycleRange: [1, 10], careers: ["Administración", "Economía"], emoji: "🎯", title: "Lanzamiento de Campaña Viral", desc: "Inviertes el presupuesto publicitario en TikTok e Instagram Ads. La ruleta dirá si se vuelve tendencia o fracasa.",
+        choices: [ { text: "Probar suerte con la campaña", minigame: "roulette", winEffects: { social: +30, money: +20 }, loseEffects: { money: -25, social: -10 } } ]
+    },
+
+    // ═══════════════════════════════════════════════════
+    // 🚻 EVENTOS COMUNES DE GÉNERO
+    // ═══════════════════════════════════════════════════
+    {
+        cycleRange: [1, 10], genders: ["F"], emoji: "🚻", title: "Baño de Mujeres", desc: "Tienes 5 minutos entre clases para ir al baño del Pabellón W, pero la cola da la vuelta a la esquina. Alguien intenta colarse.",
+        choices: [ { text: "Defender tu lugar en la cola", minigame: "reaction", winEffects: { social: +10, energy: -5 }, loseEffects: { social: -10, energy: -10 } }, { text: "Aguantar e ir a clase", effects: { energy: -15, study: +5 } } ]
+    },
+    {
+        cycleRange: [1, 10], genders: ["M"], emoji: "🚹", title: "Baño de Hombres", desc: "Entras al baño y ves que todos los urinarios están ocupados menos el que está justo en medio de dos patas. El código de hombres dice que no puedes usarlo.",
+        choices: [ { text: "Romper el código y usarlo", minigame: "rps", winEffects: { energy: +10, social: -15 }, loseEffects: { social: -20, energy: -5 } }, { text: "Esperar a que se libere otro", effects: { energy: -10 } } ]
+    }
+);
+
+// Swipe listener for gameResultView (needs to trigger the main action button if it exists)
+// Wait, when we swipe down, we just want to click the first button in gameResultActions.
