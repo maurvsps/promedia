@@ -1,0 +1,8 @@
+{
+  "name": "Promedia",
+  "description": "Calculadora y gestor de notas y promedio ponderado para ciclos universitarios.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
