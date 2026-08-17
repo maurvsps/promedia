@@ -2470,7 +2470,6 @@ input[type="time"] { color-scheme: dark; } /* Base native dark scheme for the po
       <div>
         <div style="font-size:16px; font-weight:900; color:var(--text); display:flex; align-items:center; gap:8px;">
           <span>👑 Panel Admin & Analíticas</span>
-          <span style="font-size:10px; background:var(--accent); color:#fff; padding:2px 6px; border-radius:6px; font-weight:800;">PROMEDIA ADMIN</span>
         </div>
         <div style="font-size:11px; color:var(--sub); font-weight:600; margin-top:2px;">
           Estadísticas en tiempo real, usuarios registrados y explorador Cachimbo.
@@ -2511,6 +2510,28 @@ input[type="time"] { color-scheme: dark; } /* Base native dark scheme for the po
     </div>
     <div id="adminUserModalBody" style="display:flex; flex-direction:column; gap:12px;">
       <!-- Details loaded dynamically -->
+    </div>
+  </div>
+</div>
+
+<!-- MASS SYNC MODAL -->
+<div class="overlay" id="adminSyncModal" style="z-index: 10060;">
+  <div class="sheet" style="padding:20px; background:var(--bg); max-height:88vh; border-radius:24px 24px 0 0; overflow-y:auto; display:flex; flex-direction:column; gap:14px;">
+    <div class="sheet-handle" style="background:var(--border2);"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div style="font-size:16px; font-weight:900; color:var(--text);">⚡ Vincular Correos de Firebase Auth</div>
+      <button onclick="closeSheet('adminSyncModal')" style="background:var(--s2); border:1px solid var(--border2); color:var(--text); border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer;">✕</button>
+    </div>
+    <div style="font-size:12px; color:var(--sub); line-height:1.5;">
+      Pega aquí la lista o texto copiado de <b>Firebase Authentication &gt; Users</b> (o formato <code>UID,correo@ejemplo.com</code>). El sistema extraerá automáticamente los correos y sus UIDs y los guardará en Firestore para que aparezcan identificados.
+    </div>
+    <textarea id="adminSyncInput" rows="6" placeholder="Pega aquí el texto copiado de la consola de Firebase o líneas como:
+UID_DEL_USUARIO,correo@aloe.ulima.edu.pe
+otrouid12345,estudiante@gmail.com" style="width:100%; box-sizing:border-box; padding:12px; border-radius:12px; border:1px solid var(--border2); background:var(--s1); color:var(--text); font-family:monospace; font-size:11.5px; outline:none; resize:vertical;"></textarea>
+    <div id="adminSyncResult" style="display:none; font-size:12px; font-weight:700; padding:10px; border-radius:8px;"></div>
+    <div style="display:flex; gap:10px; justify-content:flex-end;">
+      <button onclick="closeSheet('adminSyncModal')" class="btn" style="padding:8px 14px; font-size:12px;">Cerrar</button>
+      <button onclick="executeAdminMassSync()" class="btn btn-accent" id="btnRunSync" style="padding:8px 18px; font-size:12px; font-weight:800;">🚀 Sincronizar Ahora</button>
     </div>
   </div>
 </div>
@@ -4276,7 +4297,6 @@ function renderPerfil() {
               <div>
                 <div style="font-weight:800; font-size:14px; color:var(--text); display:flex; align-items:center; gap:6px;">
                   Panel de Control Admin
-                  <span style="font-size:9px; background:var(--accent); color:#fff; padding:2px 6px; border-radius:6px; font-weight:800;">PROMEDIA ADMIN</span>
                 </div>
                 <div style="font-size:11.5px; color:var(--sub); margin-top:2px;">Estadísticas en vivo, usuarios registrados y explorador Cachimbo.</div>
               </div>
@@ -8953,13 +8973,14 @@ window.renderAdminStats = async function() {
     let careerMap = {};
 
     users.forEach(u => {
-      const last = u.lastLogin ? new Date(u.lastLogin).getTime() : 0;
-      if (now - last <= oneDay) activeToday++;
-      if (now - last <= sevenDays) activeWeek++;
+      const stateObj = u.state || {};
+      const last = u.lastLogin ? new Date(u.lastLogin).getTime() : (u.updatedAt ? new Date(u.updatedAt).getTime() : 0);
+      if (last > 0 && (now - last <= oneDay)) activeToday++;
+      if (last > 0 && (now - last <= sevenDays)) activeWeek++;
 
-      if (u.simGame && u.simGame.name) cachimboPlayers++;
+      if ((u.simGame && u.simGame.name) || (stateObj.simGame && stateObj.simGame.name)) cachimboPlayers++;
 
-      let car = u.career || 'Sin configurar';
+      let car = u.career || stateObj.career || 'Sin configurar';
       if (typeof MALLAS !== 'undefined' && MALLAS[car] && MALLAS[car].label) car = MALLAS[car].label;
       careerMap[car] = (careerMap[car] || 0) + 1;
     });
@@ -9021,7 +9042,12 @@ window.renderAdminStats = async function() {
       <!-- Lista de Usuarios Registrados -->
       <div style="background:var(--s1); border:1px solid var(--border2); border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:12px;">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-          <div style="font-size:13px; font-weight:900; color:var(--text);">📋 Directorio de Usuarios (${users.length})</div>
+          <div style="font-size:13px; font-weight:900; color:var(--text); display:flex; align-items:center; gap:8px;">
+            <span>📋 Directorio de Usuarios (${users.length})</span>
+            <button onclick="openAdminSyncModal()" class="btn btn-accent" style="padding:4px 10px; font-size:11px; font-weight:800; border-radius:8px; display:inline-flex; align-items:center; gap:4px;">
+              ⚡ Vincular Correos
+            </button>
+          </div>
           <input type="text" id="adminUserSearchInput" placeholder="Buscar por correo o nombre..." oninput="filterAdminUsersTable()" style="padding:6px 12px; font-size:11.5px; border-radius:8px; background:var(--bg); border:1px solid var(--border2); color:var(--text); outline:none; min-width:160px;">
         </div>
 
@@ -9029,13 +9055,14 @@ window.renderAdminStats = async function() {
     `;
 
     users.forEach((u) => {
-      const name = u.displayName || (u.email ? u.email.split('@')[0] : 'Usuario');
-      const email = u.email || 'Sin correo registrado';
+      const stateObj = u.state || {};
+      const name = u.displayName || (u.email ? u.email.split('@')[0] : (stateObj.name || ('Usuario (' + u.id.slice(0,6) + ')')));
+      const email = u.email || 'Doc ID: ' + u.id.slice(0,10) + '...';
       const initial = name.charAt(0).toUpperCase();
-      let car = u.career || 'Sin configurar';
+      let car = u.career || stateObj.career || 'Sin configurar';
       if (typeof MALLAS !== 'undefined' && MALLAS[car] && MALLAS[car].label) car = MALLAS[car].label;
-      const lastStr = u.lastLogin ? new Date(u.lastLogin).toLocaleDateString('es-PE', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : 'Hace tiempo';
-      const cycles = u.cyclesCount || 0;
+      const lastStr = u.lastLogin ? new Date(u.lastLogin).toLocaleDateString('es-PE', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : (u.updatedAt ? new Date(u.updatedAt).toLocaleDateString('es-PE', { month:'short', day:'numeric' }) : 'Registrado');
+      const cycles = u.cyclesCount || (stateObj.cycles ? Object.keys(stateObj.cycles).length : 0);
 
       html += `
         <div class="admin-user-row" data-search="${(name + ' ' + email + ' ' + car).toLowerCase()}" style="background:var(--bg); border:1px solid var(--border2); border-radius:12px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
@@ -9091,6 +9118,14 @@ window.filterAdminUsersTable = function() {
   });
 };
 
+window.openAdminSyncModal = function() {
+  const res = document.getElementById('adminSyncResult');
+  if (res) res.style.display = 'none';
+  const inp = document.getElementById('adminSyncInput');
+  if (inp) inp.value = '';
+  openSheet('adminSyncModal');
+};
+
 window.openAdminUserModal = function(uid) {
   const u = _adminUsersData.find(x => x.id === uid);
   if (!u) return;
@@ -9099,27 +9134,43 @@ window.openAdminUserModal = function(uid) {
   const modalBody = document.getElementById('adminUserModalBody');
   if (!modalTitle || !modalBody) return;
 
-  const name = u.displayName || u.email || 'Usuario';
+  const stateObj = u.state || {};
+  const name = u.displayName || u.email || stateObj.name || ('Usuario (' + u.id.slice(0,6) + ')');
   modalTitle.textContent = 'Detalle: ' + name;
 
   let stateInfo = 'Sin ciclos registrados';
-  if (u.state && u.state.cycles) {
-    const cKeys = Object.keys(u.state.cycles);
-    stateInfo = `${cKeys.length} ciclos ingresados (${u.coursesCount || 0} cursos en total)`;
+  if (stateObj.cycles) {
+    const cKeys = Object.keys(stateObj.cycles);
+    stateInfo = `${cKeys.length} ciclos ingresados (${u.coursesCount || 'varios'} cursos)`;
   }
 
   let simInfo = 'No ha iniciado partida en Cachimbo';
-  if (u.simGame && u.simGame.name) {
-    simInfo = `<b>${u.simGame.name}</b> (Ciclo ${u.simGame.ciclo || 1}, ${u.simGame.studies || 0}% Estudios, ${u.simGame.happiness || 0}% Ánimo)`;
+  const sg = u.simGame || stateObj.simGame;
+  if (sg && sg.name) {
+    simInfo = `<b>${sg.name}</b> (Ciclo ${sg.ciclo || 1}, ${sg.studies || 0}% Estudios, ${sg.happiness || 0}% Ánimo)`;
   }
+
+  let car = u.career || stateObj.career || 'Sin configurar';
+  if (typeof MALLAS !== 'undefined' && MALLAS[car] && MALLAS[car].label) car = MALLAS[car].label;
 
   modalBody.innerHTML = `
     <div style="background:var(--s1); border:1px solid var(--border2); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:8px;">
       <div style="font-size:13px; font-weight:900; color:var(--text);">${name}</div>
-      <div style="font-size:11px; color:var(--sub);">📧 <b>Correo:</b> ${u.email || 'No especificado'}</div>
-      <div style="font-size:11px; color:var(--sub);">🎓 <b>Carrera:</b> ${u.career || 'Sin configurar'}</div>
-      <div style="font-size:11px; color:var(--sub);">📅 <b>Último acceso:</b> ${u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'N/A'}</div>
+      <div style="font-size:11px; color:var(--sub);">📧 <b>Correo Actual:</b> ${u.email || '<span style="color:var(--amber);">Sin correo vinculado</span>'}</div>
+      <div style="font-size:11px; color:var(--sub);">🎓 <b>Carrera:</b> ${car}</div>
+      <div style="font-size:11px; color:var(--sub);">📅 <b>Último acceso:</b> ${u.lastLogin ? new Date(u.lastLogin).toLocaleString() : (u.updatedAt ? new Date(u.updatedAt).toLocaleString() : 'N/A')}</div>
       <div style="font-size:11px; color:var(--sub);">🆔 <b>UID:</b> <code style="background:var(--s2); padding:2px 4px; border-radius:4px;">${u.id}</code></div>
+    </div>
+
+    <!-- Asignar o Editar correo -->
+    <div style="background:var(--s1); border:1px solid var(--accent); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:8px;">
+      <div style="font-size:11.5px; font-weight:800; color:var(--text); display:flex; align-items:center; gap:6px;">
+        <span>✏️ Asignar o Cambiar Correo</span>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <input type="email" id="adminAssignEmailInp_${u.id}" value="${u.email || ''}" placeholder="ej: alumno@aloe.ulima.edu.pe" style="flex:1; padding:7px 10px; font-size:12px; border-radius:8px; border:1px solid var(--border2); background:var(--bg); color:var(--text); outline:none;">
+        <button onclick="saveAdminAssignedEmail('${u.id}')" class="btn btn-accent" style="padding:6px 14px; font-size:12px; font-weight:800; white-space:nowrap;">Guardar</button>
+      </div>
     </div>
 
     <div style="background:var(--s1); border:1px solid var(--border2); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:6px;">
@@ -9134,6 +9185,139 @@ window.openAdminUserModal = function(uid) {
   `;
 
   openSheet('adminUserModal');
+};
+
+window.saveAdminAssignedEmail = async function(uid) {
+  const inp = document.getElementById('adminAssignEmailInp_' + uid);
+  if (!inp) return;
+  const newEmail = inp.value.trim();
+  if (!newEmail || !newEmail.includes('@')) {
+    if (typeof showToast === 'function') showToast('Ingresa un correo válido');
+    return;
+  }
+
+  try {
+    if (!window._fbDb || !window._fbSetDoc || !window._fbDoc) {
+      throw new Error('Firestore SDK no inicializado');
+    }
+    const displayName = newEmail.split('@')[0];
+    await window._fbSetDoc(window._fbDoc(window._fbDb, 'users', uid), {
+      email: newEmail,
+      displayName: displayName,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+
+    // Update local cache
+    const cached = _adminUsersData.find(x => x.id === uid);
+    if (cached) {
+      cached.email = newEmail;
+      cached.displayName = displayName;
+    }
+
+    if (typeof showToast === 'function') showToast('✅ Correo vinculado con éxito');
+    closeSheet('adminUserModal');
+    renderAdminStats();
+  } catch(e) {
+    console.error('Error saving assigned email:', e);
+    if (typeof showToast === 'function') showToast('Error al guardar: ' + e.message);
+  }
+};
+
+window.executeAdminMassSync = async function() {
+  const inp = document.getElementById('adminSyncInput');
+  const res = document.getElementById('adminSyncResult');
+  const btn = document.getElementById('btnRunSync');
+  if (!inp || !res) return;
+
+  const rawText = inp.value.trim();
+  if (!rawText) {
+    res.style.display = 'block';
+    res.style.background = 'rgba(239, 68, 68, 0.15)';
+    res.style.color = 'var(--red)';
+    res.textContent = 'Por favor pega la lista o texto antes de sincronizar.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Procesando...';
+  res.style.display = 'block';
+  res.style.background = 'var(--s2)';
+  res.style.color = 'var(--text)';
+  res.textContent = 'Analizando registros...';
+
+  try {
+    // Parse entries: find lines with (UID, email) or search for matches with current Firestore user records
+    const lines = rawText.split('\n');
+    let matchedCount = 0;
+    const knownUids = _adminUsersData.map(u => u.id);
+
+    const emailRegex = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+
+    for (let line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      const emailsFound = trimmed.match(emailRegex);
+      if (!emailsFound || emailsFound.length === 0) continue;
+      const email = emailsFound[0];
+
+      // Find if line contains any known UID
+      let targetUid = null;
+      for (let uid of knownUids) {
+        if (trimmed.includes(uid)) {
+          targetUid = uid;
+          break;
+        }
+      }
+
+      // If no known UID found on the line, check if comma/tab separated like: UID,email
+      if (!targetUid) {
+        const parts = trimmed.split(/[\t,;| ]+/);
+        for (let p of parts) {
+          if (p && p.length >= 20 && !p.includes('@')) {
+            targetUid = p;
+            break;
+          }
+        }
+      }
+
+      if (targetUid) {
+        await window._fbSetDoc(window._fbDoc(window._fbDb, 'users', targetUid), {
+          email: email,
+          displayName: email.split('@')[0],
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        const cached = _adminUsersData.find(x => x.id === targetUid);
+        if (cached) {
+          cached.email = email;
+          cached.displayName = email.split('@')[0];
+        }
+        matchedCount++;
+      }
+    }
+
+    if (matchedCount > 0) {
+      res.style.background = 'rgba(16, 185, 129, 0.15)';
+      res.style.color = 'var(--green)';
+      res.textContent = `🎉 ¡Éxito! Se vincularon ${matchedCount} usuarios correctamente en Firestore.`;
+      setTimeout(() => {
+        closeSheet('adminSyncModal');
+        renderAdminStats();
+      }, 1800);
+    } else {
+      res.style.background = 'rgba(245, 158, 11, 0.15)';
+      res.style.color = 'var(--amber)';
+      res.textContent = `No se detectaron coincidencias exactas de UID y correo. Asegúrate de incluir el UID junto al correo (ej: UID_AQUÍ,correo@ejemplo.com).`;
+    }
+  } catch(e) {
+    res.style.background = 'rgba(239, 68, 68, 0.15)';
+    res.style.color = 'var(--red)';
+    res.textContent = 'Error durante la sincronización: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🚀 Sincronizar Ahora';
+  }
 };
 
 window.renderAdminEvents = function() {
