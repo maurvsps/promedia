@@ -336,8 +336,8 @@ body {
   z-index: 50;
 }
 .app-header-top {
-  display: flex; align-items: center; justify-content: center;
-  gap: 8px 10px; flex-wrap: wrap;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px 10px; flex-wrap: nowrap;
 }
 /* Escritorio: el toggle Inicio/Cursos debe quedar siempre centrado en el header,
    sin importar el ancho desigual del título y de los íconos a los lados. */
@@ -369,12 +369,34 @@ body {
 .top-nav-link:hover { color: var(--text); background: var(--s3); }
 .top-nav-link.active { color: var(--accent-text); background: var(--accent); }
 
-/* ── PERFIL PINEADO A LA DERECHA (desktop/laptop) ── */
-.header-profile-btn {
+
+.header-tool-btn {
   display: none;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   padding: 7px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--sub);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.header-tool-btn svg { width: 16px; height: 16px; stroke-width: 2; flex-shrink: 0; }
+.header-tool-btn:hover { background: var(--s2); color: var(--text); }
+@media (min-width: 901px) {
+  .header-tool-btn { display: flex; }
+}
+
+/* ── PERFIL PINEADO A LA DERECHA (desktop/laptop) ── */
+.header-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 7px 10px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--s3);
@@ -405,46 +427,106 @@ body {
   text-overflow: ellipsis;
 }
 @media (min-width: 901px) {
-  .header-profile-btn { display: inline-flex; }
+  .header-profile-btn { display: inline-flex; gap: 7px; padding: 7px 14px; }
+  .header-profile-label { display: inline; }
 }
 
-/* ── BOTTOM NAV (móvil) ── */
+/* ── BOTTOM NAV (móvil - 4 pestañas y botón flotante) ── */
 .bottom-nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
   display: flex; align-items: stretch; justify-content: space-around;
   background: var(--s1); border-top: 1px solid var(--border);
-  padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+  padding: 5px 2px calc(5px + env(safe-area-inset-bottom, 0px));
 }
 .bn-item {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 3px; background: none; border: none; color: var(--muted); font-family: inherit;
-  cursor: pointer; padding: 6px 2px; border-radius: 10px; min-width: 0;
+  gap: 2px; background: none; border: none; color: var(--muted); font-family: inherit;
+  cursor: pointer; padding: 4px 1px; border-radius: 8px; min-width: 0;
   transition: color 0.15s ease;
 }
 .bn-item:active { background: var(--s3); }
 .bn-icon {
   display: flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px; color: var(--muted);
+  width: 20px; height: 20px; color: var(--muted);
   transition: color 0.15s ease, transform 0.15s ease;
+  position: relative;
 }
 .bn-icon svg {
-  width: 20px; height: 20px; stroke-width: 2; stroke: currentColor;
+  width: 19px; height: 19px; stroke-width: 2; stroke: currentColor;
 }
-.bn-label { font-size: 9.5px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
+.bn-label { font-size: 9px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; text-align: center; }
 .bn-item.active { color: var(--text); }
 .bn-item.active .bn-icon { color: var(--text); }
 .bn-item:active .bn-icon { transform: scale(0.92); }
-.bn-add { flex: 0 0 auto; }
-.bn-add-icon {
-  width: 46px; height: 46px; border-radius: 50%; background: #F56A24; color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  line-height: 1; margin-top: -20px; box-shadow: 0 4px 14px rgba(245,106,36,0.45);
-  transition: transform 0.15s ease;
-}
-.bn-add-icon svg {
-  width: 24px; height: 24px; stroke: #ffffff;
-}
+
+.bn-add { flex: 0 0 auto; background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; outline: none; -webkit-tap-highlight-color: transparent; }
+.bn-add-icon { width: 46px; height: 46px; border-radius: 50%; background: var(--accent); color: var(--accent-text); display: flex; align-items: center; justify-content: center; line-height: 1; margin-top: -20px; box-shadow: 0 4px 14px rgba(245,106,36,0.45); transition: transform 0.15s ease; }
+.bn-add-icon svg { width: 24px; height: 24px; stroke: currentColor; }
 .bn-add:active .bn-add-icon { transform: scale(0.94); }
+
+
+/* ── AGENDA STYLES ── */
+.agenda-filter-btn {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  color: var(--sub);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.agenda-filter-btn:hover {
+  color: var(--text);
+  border-color: var(--border2);
+}
+.agenda-filter-btn.active {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+.agenda-card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: transform 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+.agenda-card:hover {
+  border-color: var(--border2);
+}
+.agenda-card.completed {
+  opacity: 0.6;
+  background: var(--s2);
+}
+.agenda-check-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border2);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: all 0.15s ease;
+}
+.agenda-check-btn:hover {
+  border-color: var(--green);
+}
+.agenda-card.completed .agenda-check-btn {
+  background: var(--green);
+  border-color: var(--green);
+  color: white;
+}
 
 .quick-add-menu {
   position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%) translateY(8px);
@@ -1864,6 +1946,60 @@ input[type="time"]::-webkit-calendar-picker-indicator { display: none; -webkit-a
 input[type="time"] { color-scheme: dark; } /* Base native dark scheme for the popover */
 :root[data-theme="light"] input[type="time"] { color-scheme: light; }
 
+/* Schedule Session Builder Cards & Form Controls */
+.horario-session-card {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.15s ease;
+}
+.horario-session-card:hover {
+  border-color: var(--border2);
+}
+.horario-session-grid {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr 1fr;
+  gap: 8px;
+  align-items: stretch;
+}
+.session-field-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.session-field-col label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+.session-field {
+  margin: 0 !important;
+  margin-bottom: 0 !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  box-sizing: border-box !important;
+  font-size: 12.5px !important;
+}
+.session-field.pm-dropdown-trigger {
+  padding: 6px 10px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+}
+input[type="time"].session-field {
+  padding: 6px 8px !important;
+  text-align: center;
+  font-family: inherit;
+  font-weight: 600;
+}
+
 /* ════════════════════════════════════════════════
    PROMEDIA CUSTOM DROPDOWN COMPONENT
 ════════════════════════════════════════════════ */
@@ -2181,12 +2317,20 @@ input[type="time"] { color-scheme: dark; } /* Base native dark scheme for the po
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <span>Horario</span>
       </button>
-      <button class="top-nav-link" onclick="openSimSheet()">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
-        <span>Simulador</span>
+      <button class="top-nav-link" data-nav="agenda" onclick="switchView('agenda')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+        <span>Agenda</span>
       </button>
     </nav>
     <div class="header-right">
+      <button class="header-tool-btn" onclick="openSimSheet()" title="Simulador de Notas">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+        <span class="header-tool-label">Simulador</span>
+      </button>
+      <button class="header-tool-btn" onclick="openCachimbo()" title="Simulador Cachimbo RPG">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 18 3 18 7 6 7"/><polygon points="2 7 22 7 22 17 2 17"/><circle cx="8" cy="12" r="1.5"/><circle cx="16" cy="12" r="1.5"/><path d="M9 17v4"/><path d="M15 17v4"/></svg>
+        <span class="header-tool-label">Cachimbo</span>
+      </button>
       <button class="header-profile-btn" data-nav="perfil" onclick="switchView('perfil')" title="Mi perfil">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         <span class="header-profile-label" id="desktopUserLabel">Perfil</span>
@@ -2201,38 +2345,49 @@ input[type="time"] { color-scheme: dark; } /* Base native dark scheme for the po
 <nav class="bottom-nav" id="bottomNav">
   <button class="bn-item" data-nav="dashboard" onclick="switchView('dashboard')">
     <span class="bn-icon">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
     </span>
     <span class="bn-label">Inicio</span>
   </button>
   <button class="bn-item" data-nav="ciclo" onclick="switchView('ciclo')">
     <span class="bn-icon">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
     </span>
     <span class="bn-label">Cursos</span>
   </button>
-  <button class="bn-item bn-add" onclick="toggleQuickAdd()" title="Añadir">
-    <span class="bn-add-icon">
+
+  <button class="bn-add" onclick="toggleQuickAdd()">
+    <div class="bn-add-icon">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-    </span>
+    </div>
   </button>
+
   <button class="bn-item" data-nav="horario" onclick="switchView('horario')">
     <span class="bn-icon">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
     </span>
     <span class="bn-label">Horario</span>
   </button>
-  <button class="bn-item" data-nav="perfil" onclick="switchView('perfil')">
+  <button class="bn-item" data-nav="agenda" onclick="switchView('agenda')">
     <span class="bn-icon">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+      <span id="bnAgendaBadge" style="display:none; position:absolute; top:-1px; right:-2px; width:7px; height:7px; border-radius:50%; background:var(--accent);"></span>
     </span>
-    <span class="bn-label">Perfil</span>
+    <span class="bn-label">Agenda</span>
   </button>
 </nav>
 <div class="quick-add-menu" id="quickAddMenu">
+  <button class="quick-add-opt" onclick="openAgendaTaskSheet(); closeQuickAdd();">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+    <span>Nueva entrega/tarea</span>
+  </button>
   <button class="quick-add-opt" onclick="openSimSheet(); closeQuickAdd();">
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
     <span>Simulador</span>
+  </button>
+  <button class="quick-add-opt" onclick="openCachimbo(); closeQuickAdd();">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 18 3 18 7 6 7"/><polygon points="2 7 22 7 22 17 2 17"/><circle cx="8" cy="12" r="1.5"/><circle cx="16" cy="12" r="1.5"/><path d="M9 17v4"/><path d="M15 17v4"/></svg>
+    <span>Cachimbo RPG</span>
   </button>
   <button class="quick-add-opt" onclick="quickAdd('note')">
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
@@ -2261,14 +2416,18 @@ input[type="time"] { color-scheme: dark; } /* Base native dark scheme for the po
         </h2>
         <p style="color:var(--muted); font-size:12px; line-height:1.3; max-width:90%;">Clases de la semana</p>
       </div>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <button onclick="triggerHorarioUpload()" style="background:linear-gradient(45deg, #a855f7, #6366f1); color:white; border:none; border-radius:10px; padding:7px 12px; font-size:11.5px; font-weight:600; display:flex; align-items:center; gap:5px; cursor:pointer; flex-shrink:0; box-shadow: 0 2px 8px rgba(168,85,247,0.3); transition: transform 0.15s ease;" onmousedown="this.style.transform='scale(0.96)'" onmouseup="this.style.transform='scale(1)'">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"/></svg>
-          ✨ Escanear con IA
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <button onclick="exportScheduleToICS()" style="background:var(--s2); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 11px; font-size:11.5px; font-weight:600; display:flex; align-items:center; gap:5px; cursor:pointer; flex-shrink:0; transition:all 0.15s ease;" title="Exportar a Google Calendar / Apple Calendar">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m10 14 2 2 4-4"/></svg>
+          <span>Exportar .ICS</span>
+        </button>
+        <button onclick="triggerHorarioUpload()" style="background:linear-gradient(45deg, #a855f7, #6366f1); color:white; border:none; border-radius:10px; padding:7px 12px; font-size:11.5px; font-weight:600; display:flex; align-items:center; gap:6px; cursor:pointer; flex-shrink:0; box-shadow: 0 2px 8px rgba(168,85,247,0.3); transition: transform 0.15s ease;" onmousedown="this.style.transform='scale(0.96)'" onmouseup="this.style.transform='scale(1)'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+          <span>Escanear con IA</span>
         </button>
         <button onclick="openEditHorarioSheet()" style="background:var(--s2); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:7px 10px; font-size:11.5px; font-weight:600; display:flex; align-items:center; gap:4px; cursor:pointer; flex-shrink:0;">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-          Configurar
+          <span>Configurar</span>
         </button>
       </div>
       <input type="file" id="horarioUpload" accept="image/*" style="display:none" onchange="handleScheduleUpload(event)">
@@ -2277,16 +2436,51 @@ input[type="time"] { color-scheme: dark; } /* Base native dark scheme for the po
     </div>
   </div>
 
+  <!-- VISTA AGENDA (Tareas y Entregas) -->
+  <div id="viewAgenda" style="display:none; padding: 20px; max-width: 850px; margin: 0 auto; padding-bottom: 110px;">
+    <div class="view-header" style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+      <div style="flex:1; min-width:200px;">
+        <h2 class="view-title" style="margin-bottom:4px; display:flex; align-items:center; gap:8px;">
+          Agenda de Entregas
+          <span id="agendaPendingBadge" style="font-size:11px; color:var(--accent-text); background:var(--accent); padding:2px 8px; border-radius:12px; font-weight:700;">0 pendientes</span>
+        </h2>
+        <p style="color:var(--muted); font-size:12.5px; line-height:1.3;">Tareas, controles, proyectos y evaluaciones</p>
+      </div>
+      <button onclick="openAgendaTaskSheet()" class="btn btn-accent" style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; font-size:12.5px; font-weight:700; border-radius:10px; box-shadow:0 2px 10px rgba(245,106,36,0.3);">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <span>Nueva Entrega</span>
+      </button>
+    </div>
+
+    <!-- Filtros de Agenda -->
+    <div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; margin-bottom:16px; scrollbar-width:none;">
+      <button class="agenda-filter-btn active" data-filter="all" onclick="setAgendaFilter('all')">Todas</button>
+      <button class="agenda-filter-btn" data-filter="pending" onclick="setAgendaFilter('pending')">Pendientes</button>
+      <button class="agenda-filter-btn" data-filter="exam" onclick="setAgendaFilter('exam')">Exámenes / PCs</button>
+      <button class="agenda-filter-btn" data-filter="task" onclick="setAgendaFilter('task')">Tareas / Proyectos</button>
+      <button class="agenda-filter-btn" data-filter="done" onclick="setAgendaFilter('done')">Completadas</button>
+    </div>
+
+    <div id="agendaListContainer" style="display:flex; flex-direction:column; gap:10px;">
+    </div>
+  </div>
+
   <div id="viewCiclo">
     <div class="pond-panel">
       <div class="pond-top">
         <div class="pond-global" style="flex:1">
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; gap:8px;">
             <div class="pond-global-label" id="activeCycleLabel" style="margin-bottom:0">Promedio del ciclo</div>
-            <button onclick="openStory()" title="Compartir resumen" style="background:var(--s3); color:var(--text); border:1px solid var(--border); border-radius:12px; padding:4px 10px; font-size:11px; font-weight:600; display:flex; align-items:center; gap:4px; cursor:pointer;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-              Compartir
-            </button>
+            <div style="display:flex; gap:6px;">
+              <button onclick="window.open('https://maurvsps.github.io/promedia/cursos', '_blank')" title="Catálogo de cursos" style="background:var(--s2); color:var(--text); border:1px solid var(--border); border-radius:12px; padding:4px 10px; font-size:11px; font-weight:600; display:flex; align-items:center; gap:4px; cursor:pointer;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                Catálogo
+              </button>
+              <button onclick="openStory()" title="Compartir resumen" style="background:var(--s3); color:var(--text); border:1px solid var(--border); border-radius:12px; padding:4px 10px; font-size:11px; font-weight:600; display:flex; align-items:center; gap:4px; cursor:pointer;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                Compartir
+              </button>
+            </div>
           </div>
           <div class="pond-global-val" id="activeCycleVal">—</div>
         </div>
@@ -2309,6 +2503,66 @@ input[type="time"] { color-scheme: dark; } /* Base native dark scheme for the po
 
   <div id="viewPerfil" style="display:none"></div>
 </main>
+
+<!-- AGENDA TASK SHEET (Modal para crear/editar tareas y entregas) -->
+<div class="overlay" id="agendaTaskSheet">
+  <div class="sheet" style="max-width:480px;">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="agendaTaskSheetTitle" style="display:flex; align-items:center; gap:8px;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+      <span>Nueva Entrega / Tarea</span>
+    </div>
+    <div class="sheet-body" style="padding:14px 18px;">
+      <input type="hidden" id="agendaEditingTaskId" value="">
+
+      <div style="margin-bottom:12px;">
+        <div class="field-label">Título de la Entrega <span style="color:var(--red);">*</span></div>
+        <input type="text" id="agendaTaskTitle" class="field-input" placeholder="Ej: Trabajo Parcial - Informe y Presentación" style="margin-bottom:0;" required>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+        <div>
+          <div class="field-label">Curso</div>
+          <select id="agendaTaskCourse" class="field-input" style="margin-bottom:0;">
+          </select>
+        </div>
+        <div>
+          <div class="field-label">Categoría</div>
+          <select id="agendaTaskCategory" class="field-input" style="margin-bottom:0;">
+            <option value="tarea">📝 Tarea / Práctica</option>
+            <option value="examen">📑 Examen / PC</option>
+            <option value="proyecto">💼 Proyecto</option>
+            <option value="lectura">📖 Lectura</option>
+            <option value="otro">📌 Otro</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:10px; margin-bottom:12px;">
+        <div>
+          <div class="field-label">Fecha de Entrega</div>
+          <input type="date" id="agendaTaskDueDate" class="field-input" style="margin-bottom:0;">
+        </div>
+        <div>
+          <div class="field-label">Hora (Opcional)</div>
+          <input type="time" id="agendaTaskDueTime" class="field-input" style="margin-bottom:0;" value="23:59">
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <div class="field-label">Notas / Instrucciones (Opcional)</div>
+        <textarea id="agendaTaskNotes" class="field-input" rows="2" placeholder="Ej: Subir en formato PDF al aula virtual antes de medianoche..." style="resize:none; margin-bottom:0; font-size:12.5px;"></textarea>
+      </div>
+    </div>
+    <div class="sheet-actions" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+      <button type="button" id="btnDeleteAgendaTask" class="btn" style="display:none; color:var(--red); border-color:var(--border);" onclick="deleteCurrentEditingTask()">Eliminar</button>
+      <div style="display:flex; gap:8px; margin-left:auto;">
+        <button type="button" class="btn" onclick="closeSheet('agendaTaskSheet')">Cancelar</button>
+        <button type="button" class="btn btn-accent" onclick="saveAgendaTask()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- COLOR PICKER -->
 <div class="overlay" id="colorSheet">
@@ -2345,8 +2599,14 @@ input[type="time"] { color-scheme: dark; } /* Base native dark scheme for the po
         </div>
         <div id="editEvalRows"></div>
         <div style="display:flex; justify-content:space-between; gap:10px; margin-top:8px">
-          <button class="add-eval-row-btn" style="flex:1; background:linear-gradient(45deg, #a855f7, #6366f1); color:white; border:none;" onclick="document.getElementById('syllabusUpload').click()">✨ Escanear Sílabo</button>
-          <button class="add-eval-row-btn" style="flex:1" onclick="addEditEvalRow()">＋ Evaluación</button>
+          <button class="add-eval-row-btn" style="flex:1; background:linear-gradient(45deg, #a855f7, #6366f1); color:white; border:none; display:inline-flex; align-items:center; justify-content:center; gap:6px;" onclick="document.getElementById('syllabusUpload').click()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+            <span>Escanear Sílabo</span>
+          </button>
+          <button class="add-eval-row-btn" style="flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px;" onclick="addEditEvalRow()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Evaluación</span>
+          </button>
         </div>
         <input type="file" id="syllabusUpload" accept="image/*" style="display:none" onchange="handleSyllabusUpload(event)">
       </div>
@@ -2573,8 +2833,8 @@ input[type="time"] { color-scheme: dark; } /* Base native dark scheme for the po
               <div style="margin-top:12px;">
                   <label style="font-size:10px; font-weight:800; color:var(--sub); text-transform:uppercase; display:block; margin-bottom:6px;">Género <span style="color:var(--red);">*</span></label>
                   <div style="display:flex; gap:8px;">
-                      <button id="btnGenM" class="btn btn-secondary gen-btn" style="flex:1; border:2px solid transparent;" onclick="setSimGender('M')">👦 Chico</button>
-                      <button id="btnGenF" class="btn btn-secondary gen-btn" style="flex:1; border:2px solid transparent;" onclick="setSimGender('F')">👧 Chica</button>
+                      <button id="btnGenM" class="btn btn-secondary gen-btn" style="flex:1; border:2px solid transparent; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="setSimGender('M')"><span style="font-size:18px;">👦</span> Chico</button>
+                      <button id="btnGenF" class="btn btn-secondary gen-btn" style="flex:1; border:2px solid transparent; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="setSimGender('F')"><span style="font-size:18px;">👧</span> Chica</button>
                   </div>
                   <input type="hidden" id="gInpGender" value="">
               </div>
@@ -2584,7 +2844,7 @@ input[type="time"] { color-scheme: dark; } /* Base native dark scheme for the po
 
           <div style="display:flex; justify-content:space-between; align-items:flex-end; margin:0 0 8px 0;">
               <h3 style="margin:0; font-size:20px; font-weight:900; letter-spacing:-0.5px; text-transform:uppercase; font-style:italic;">¿Qué clase de alumno eres?</h3>
-              <button onclick="openLogrosSheet()" style="background:var(--s2); border:1px solid var(--border2); border-radius:12px; width:40px; height:40px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; font-size:18px; transition:all 0.2s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'" title="Logros">🏆</button>
+              <button onclick="openLogrosSheet()" style="background:var(--s2); border:1px solid var(--border2); border-radius:12px; width:40px; height:40px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:all 0.2s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'" title="Logros"><img src="https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Trophy/3D/trophy_3d.png" style="width:22px; height:22px; pointer-events:none;" alt="Logros"></button>
           </div>
           
           <div id="gArchCards" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; overflow-y:auto; flex:1;">
@@ -2610,27 +2870,35 @@ input[type="time"] { color-scheme: dark; } /* Base native dark scheme for the po
                   <div id="dashFlags" style="font-size:10px; margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;"></div>
               </div>
               <div style="display:flex; gap:8px;">
-                <button onclick="openLogrosSheet()" style="background:var(--s2); border:1px solid var(--border); border-radius:12px; width:44px; height:44px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; font-size:18px; transition:all 0.2s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'" title="Logros">🏆</button>
-                <button onclick="openTienda()" style="background:var(--s2); border:1px solid var(--border); border-radius:12px; width:44px; height:44px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; font-size:18px; transition:all 0.2s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'" title="Tienda">🛒</button>
+                <button onclick="openLogrosSheet()" style="background:var(--s2); border:1px solid var(--border); border-radius:12px; width:44px; height:44px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:all 0.2s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'" title="Logros"><img src="https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Trophy/3D/trophy_3d.png" style="width:24px; height:24px; pointer-events:none;" alt="Logros"></button>
+                <button onclick="openTienda()" style="background:var(--s2); border:1px solid var(--border); border-radius:12px; width:44px; height:44px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:all 0.2s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'" title="Tienda"><img src="https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Shopping%20cart/3D/shopping_cart_3d.png" style="width:24px; height:24px; pointer-events:none;" alt="Tienda"></button>
               </div>
           </div>
           <!-- Stat Grid -->
           <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; background:var(--bg);">
               <div style="padding:16px 8px; text-align:center; border-right:1px solid var(--border2); position:relative;" id="gStatStudyContainer">
                   <div style="font-size:20px; font-weight:900; color:var(--text); font-variant-numeric: tabular-nums; position:relative; z-index:2;" id="gStatStudy">50</div>
-                  <div style="font-size:9px; font-weight:800; color:var(--sub); text-transform:uppercase; margin-top:6px; letter-spacing:0.5px; position:relative; z-index:2;">📚 Estud.</div>
+                  <div style="font-size:9.5px; font-weight:800; color:var(--sub); text-transform:uppercase; margin-top:6px; letter-spacing:0.5px; position:relative; z-index:2; display:flex; align-items:center; justify-content:center; gap:4px;">
+                    <img src="https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Books/3D/books_3d.png" style="width:14px; height:14px; pointer-events:none;" alt="Estudio"> Estud.
+                  </div>
               </div>
               <div style="padding:16px 8px; text-align:center; border-right:1px solid var(--border2); position:relative;" id="gStatEnergyContainer">
                   <div style="font-size:20px; font-weight:900; color:var(--text); font-variant-numeric: tabular-nums; position:relative; z-index:2;" id="gStatEnergy">50</div>
-                  <div style="font-size:9px; font-weight:800; color:var(--sub); text-transform:uppercase; margin-top:6px; letter-spacing:0.5px; position:relative; z-index:2;">🔋 Energ.</div>
+                  <div style="font-size:9.5px; font-weight:800; color:var(--sub); text-transform:uppercase; margin-top:6px; letter-spacing:0.5px; position:relative; z-index:2; display:flex; align-items:center; justify-content:center; gap:4px;">
+                    <img src="https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/High%20voltage/3D/high_voltage_3d.png" style="width:14px; height:14px; pointer-events:none;" alt="Energía"> Energ.
+                  </div>
               </div>
               <div style="padding:16px 8px; text-align:center; border-right:1px solid var(--border2); position:relative;" id="gStatSocialContainer">
                   <div style="font-size:20px; font-weight:900; color:var(--text); font-variant-numeric: tabular-nums; position:relative; z-index:2;" id="gStatSocial">50</div>
-                  <div style="font-size:9px; font-weight:800; color:var(--sub); text-transform:uppercase; margin-top:6px; letter-spacing:0.5px; position:relative; z-index:2;">🍻 Social</div>
+                  <div style="font-size:9.5px; font-weight:800; color:var(--sub); text-transform:uppercase; margin-top:6px; letter-spacing:0.5px; position:relative; z-index:2; display:flex; align-items:center; justify-content:center; gap:4px;">
+                    <img src="https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Clinking%20beer%20mugs/3D/clinking_beer_mugs_3d.png" style="width:14px; height:14px; pointer-events:none;" alt="Social"> Social
+                  </div>
               </div>
               <div style="padding:16px 8px; text-align:center; position:relative;" id="gStatMoneyContainer">
                   <div style="font-size:20px; font-weight:900; color:var(--text); font-variant-numeric: tabular-nums; position:relative; z-index:2;" id="gStatMoney">50</div>
-                  <div style="font-size:9px; font-weight:800; color:var(--sub); text-transform:uppercase; margin-top:6px; letter-spacing:0.5px; position:relative; z-index:2;">💰 Dinero</div>
+                  <div style="font-size:9.5px; font-weight:800; color:var(--sub); text-transform:uppercase; margin-top:6px; letter-spacing:0.5px; position:relative; z-index:2; display:flex; align-items:center; justify-content:center; gap:4px;">
+                    <img src="https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Money%20bag/3D/money_bag_3d.png" style="width:14px; height:14px; pointer-events:none;" alt="Dinero"> Dinero
+                  </div>
               </div>
           </div>
           <!-- Live Grades -->
@@ -2729,14 +2997,17 @@ input[type="time"] { color-scheme: dark; } /* Base native dark scheme for the po
     <!-- Admin Tabs -->
     <div style="padding:10px 16px; background:var(--bg); border-bottom:1px solid var(--border2); flex-shrink:0;">
       <div style="display:flex; background:var(--s2); border-radius:12px; padding:4px; gap:4px; overflow-x:auto;">
-        <button id="adminTabStatsBtn" onclick="switchAdminTab('stats')" style="flex:1; min-width:110px; padding:8px 12px; font-size:12px; font-weight:800; border-radius:8px; border:none; background:var(--s1); color:var(--text); cursor:pointer; transition:all 0.2s;">
-          📊 Estadísticas
+        <button id="adminTabStatsBtn" onclick="switchAdminTab('stats')" style="flex:1; min-width:110px; padding:8px 12px; font-size:12px; font-weight:800; border-radius:8px; border:none; background:var(--s1); color:var(--text); cursor:pointer; transition:all 0.2s; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>
+          <span>Estadísticas</span>
         </button>
-        <button id="adminTabEventsBtn" onclick="switchAdminTab('events')" style="flex:1; min-width:130px; padding:8px 12px; font-size:12px; font-weight:800; border-radius:8px; border:none; background:transparent; color:var(--sub); cursor:pointer; transition:all 0.2s;">
-          🎮 Eventos & Minijuegos
+        <button id="adminTabEventsBtn" onclick="switchAdminTab('events')" style="flex:1; min-width:130px; padding:8px 12px; font-size:12px; font-weight:800; border-radius:8px; border:none; background:transparent; color:var(--sub); cursor:pointer; transition:all 0.2s; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2 2 2 0 0 1 0 4 2 2 0 0 0-2 2v2a2 2 0 0 1-2 2h-2a2 2 0 0 0-2 2 2 2 0 0 1-4 0 2 2 0 0 0-2-2H5a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2 2 2 0 0 0 0-4 2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2a2 2 0 0 0 2-2 2 2 0 0 1 4 0 2 2 0 0 0 2 2z"/></svg>
+          <span>Eventos & Minijuegos</span>
         </button>
-        <button id="adminTabSuggestionsBtn" onclick="switchAdminTab('suggestions')" style="flex:1; min-width:110px; padding:8px 12px; font-size:12px; font-weight:800; border-radius:8px; border:none; background:transparent; color:var(--sub); cursor:pointer; transition:all 0.2s;">
-          💬 Sugerencias
+        <button id="adminTabSuggestionsBtn" onclick="switchAdminTab('suggestions')" style="flex:1; min-width:110px; padding:8px 12px; font-size:12px; font-weight:800; border-radius:8px; border:none; background:transparent; color:var(--sub); cursor:pointer; transition:all 0.2s; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Sugerencias</span>
         </button>
       </div>
     </div>
@@ -2767,20 +3038,26 @@ input[type="time"] { color-scheme: dark; } /* Base native dark scheme for the po
   <div class="sheet" style="padding:20px; background:var(--bg); max-height:88vh; border-radius:24px 24px 0 0; overflow-y:auto; display:flex; flex-direction:column; gap:14px;">
     <div class="sheet-handle" style="background:var(--border2);"></div>
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <div style="font-size:16px; font-weight:900; color:var(--text);">⚡ Vincular Correos de Firebase Auth</div>
+      <div style="font-size:16px; font-weight:900; color:var(--text); display:flex; align-items:center; gap:6px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span>Vincular Correos de Firebase Auth</span>
+      </div>
       <button onclick="closeSheet('adminSyncModal')" style="background:var(--s2); border:1px solid var(--border2); color:var(--text); border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; cursor:pointer;">✕</button>
     </div>
 
     <!-- AI Screenshot Reader Card -->
     <div style="background:linear-gradient(135deg, rgba(245,106,36,0.12), rgba(99,102,241,0.12)); border:1.5px dashed var(--accent); border-radius:14px; padding:16px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px;">
-      <div style="font-size:24px;">✨📸</div>
+      <div style="color:var(--accent);">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+      </div>
       <div>
         <div style="font-size:13px; font-weight:900; color:var(--text);">Escanear Captura de Pantalla con IA</div>
         <div style="font-size:11px; color:var(--sub); margin-top:2px;">Sube una captura de tu tabla de Firebase Authentication y la IA leerá los UIDs y correos automáticamente.</div>
       </div>
       <input type="file" id="adminAuthImageInput" accept="image/*" style="display:none;" onchange="handleAuthTableImageUpload(event)">
       <button type="button" onclick="document.getElementById('adminAuthImageInput').click()" class="btn btn-accent" id="btnUploadAuthImg" style="padding:8px 18px; font-size:12px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
-        <span>📷 Subir Captura de Firebase</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+        <span>Subir Captura de Firebase</span>
       </button>
       <div id="adminAiScanStatus" style="display:none; font-size:11.5px; font-weight:700; color:var(--accent);"></div>
     </div>
@@ -2800,7 +3077,10 @@ yxj6RF8XOvdnKW7bDXILueOe...,luismaquiroz2026@gmail.com" style="width:100%; box-s
     <div id="adminSyncResult" style="display:none; font-size:12px; font-weight:700; padding:10px; border-radius:8px;"></div>
     <div style="display:flex; gap:10px; justify-content:flex-end;">
       <button onclick="closeSheet('adminSyncModal')" class="btn" style="padding:8px 14px; font-size:12px;">Cerrar</button>
-      <button onclick="executeAdminMassSync()" class="btn btn-accent" id="btnRunSync" style="padding:8px 18px; font-size:12px; font-weight:800;">🚀 Sincronizar Texto</button>
+      <button onclick="executeAdminMassSync()" class="btn btn-accent" id="btnRunSync" style="padding:8px 18px; font-size:12px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+        <span>Sincronizar Texto</span>
+      </button>
     </div>
   </div>
 </div>
@@ -2939,8 +3219,8 @@ yxj6RF8XOvdnKW7bDXILueOe...,luismaquiroz2026@gmail.com" style="width:100%; box-s
     <div class="sheet-title">Configurar Horario</div>
     <div class="sheet-body">
       <button class="btn" style="width:100%; margin-bottom:14px; background:linear-gradient(45deg, #a855f7, #6366f1); color:white; border:none; display:flex; align-items:center; justify-content:center; gap:6px; font-weight:600; padding:10px;" onclick="closeSheet('editHorarioSheet'); triggerHorarioUpload();">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"/></svg>
-        ✨ Escanear Horario completo con IA
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+        <span>Escanear Horario completo con IA</span>
       </button>
 
       <div style="display:flex; gap:10px; margin-bottom:14px;">
@@ -2957,7 +3237,10 @@ yxj6RF8XOvdnKW7bDXILueOe...,luismaquiroz2026@gmail.com" style="width:100%; box-s
       </div>
       <div class="field-label">Sesiones en la semana</div>
       <div id="horarioSessionsContainer" style="display:flex; flex-direction:column; gap:10px; margin-bottom:14px;"></div>
-      <button class="btn" style="padding:8px; font-size:12px; margin-bottom:14px; width:100%;" onclick="addHorarioSession()">+ Añadir sesión</button>
+      <button class="btn" style="padding:8px; font-size:12px; margin-bottom:14px; width:100%; display:inline-flex; align-items:center; justify-content:center; gap:6px;" onclick="addHorarioSession()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>Añadir sesión</span>
+      </button>
     </div>
     <div class="sheet-actions">
       <button class="btn" onclick="closeSheet('editHorarioSheet')">Cancelar</button>
@@ -2971,7 +3254,9 @@ yxj6RF8XOvdnKW7bDXILueOe...,luismaquiroz2026@gmail.com" style="width:100%; box-s
   <div class="sheet" style="max-height:88vh; display:flex; flex-direction:column;">
     <div class="sheet-handle"></div>
     <div class="sheet-title" style="display:flex; align-items:center; gap:8px;">
-      <span style="background:linear-gradient(45deg, #a855f7, #6366f1); color:white; width:26px; height:26px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-size:13px;">✨</span>
+      <span style="background:linear-gradient(45deg, #a855f7, #6366f1); color:white; width:26px; height:26px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+      </span>
       <span>Horario Detectado con IA</span>
     </div>
     <div class="sheet-body" style="overflow-y:auto; flex:1; padding-bottom:10px;">
@@ -2991,7 +3276,10 @@ yxj6RF8XOvdnKW7bDXILueOe...,luismaquiroz2026@gmail.com" style="width:100%; box-s
     </div>
     <div class="sheet-actions" style="border-top:1px solid var(--border); padding-top:12px;">
       <button class="btn" onclick="closeSheet('scanHorarioModal')">Cancelar</button>
-      <button class="btn btn-accent" style="background:linear-gradient(45deg, #a855f7, #6366f1); border:none;" onclick="applyScanSchedule()">✨ Aplicar Horario al Ciclo</button>
+      <button class="btn btn-accent" style="background:linear-gradient(45deg, #a855f7, #6366f1); border:none; display:inline-flex; align-items:center; justify-content:center; gap:6px;" onclick="applyScanSchedule()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+        <span>Aplicar Horario al Ciclo</span>
+      </button>
     </div>
   </div>
 </div>
@@ -3034,6 +3322,7 @@ yxj6RF8XOvdnKW7bDXILueOe...,luismaquiroz2026@gmail.com" style="width:100%; box-s
 
 <script src="mallas.js"></script>
 <script src="cachimbo_events.js"></script>
+<script src="agenda.js"></script>
 <script src="cachimbo_minigames.js"></script>
 <script>
 // ════════════════════════════════════════════════
@@ -3190,6 +3479,7 @@ const PromediaDropdown = (function() {
       if (this.selectEl.style.minWidth) this.wrapperEl.style.minWidth = this.selectEl.style.minWidth;
       if (this.selectEl.style.maxWidth) this.wrapperEl.style.maxWidth = this.selectEl.style.maxWidth;
       if (this.selectEl.style.width) this.wrapperEl.style.width = this.selectEl.style.width;
+      if (this.selectEl.style.margin) this.wrapperEl.style.margin = this.selectEl.style.margin;
       if (this.selectEl.style.marginBottom) this.wrapperEl.style.marginBottom = this.selectEl.style.marginBottom;
       if (this.selectEl.style.marginTop) this.wrapperEl.style.marginTop = this.selectEl.style.marginTop;
 
@@ -3211,11 +3501,19 @@ const PromediaDropdown = (function() {
         if (this.selectEl.classList.contains('field-input')) {
           trigger.classList.add('pm-field-input');
         }
+        if (this.selectEl.classList.contains('session-field')) {
+          trigger.classList.add('session-field');
+          this.wrapperEl.classList.add('session-field');
+        }
         if (this.selectEl.id) {
           trigger.setAttribute('data-select-id', this.selectEl.id);
         }
         if (this.selectEl.style.padding) {
           trigger.style.padding = this.selectEl.style.padding;
+        }
+        if (this.selectEl.style.height) {
+          trigger.style.height = this.selectEl.style.height;
+          this.wrapperEl.style.height = this.selectEl.style.height;
         }
         if (this.selectEl.style.fontSize) {
           trigger.style.fontSize = this.selectEl.style.fontSize;
@@ -3669,7 +3967,7 @@ if (document.readyState === 'loading') {
 }
 
 // ════════════════════════════════════════════════
-//  LUCIDE ICONS
+//  LUCIDE ICONS (Vector SVG System for App UI)
 // ════════════════════════════════════════════════
 const LUCIDE_SVGS = {
   'trending-up': '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
@@ -3678,6 +3976,7 @@ const LUCIDE_SVGS = {
   'book-open': '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
   'calculator': '<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/>',
   'user': '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  'users': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   'plus': '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
   'check': '<polyline points="20 6 9 17 4 12"/>',
   'check-circle': '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
@@ -3697,13 +3996,163 @@ const LUCIDE_SVGS = {
   'pencil': '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
   'sliders-horizontal': '<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>',
   'party-popper': '<path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 12"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11v.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98h-.11c-.7.11-1.22.72-1.22 1.43V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/>',
-  'message-square': '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'
+  'message-square': '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  'zap': '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  'clock': '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  'calendar': '<rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>',
+  'bar-chart-2': '<line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>',
+  'search': '<circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/>',
+  'eye': '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  'trash-2': '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+  'mail': '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+  'link': '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  'award': '<circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>',
+  'clipboard-list': '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>',
+  'chevron-left': '<polyline points="15 18 9 12 15 6"/>',
+  'chevron-right': '<polyline points="9 18 15 12 9 6"/>',
+  'chevron-down': '<polyline points="6 9 12 15 18 9"/>',
+  'refresh-cw': '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+  'shopping-cart': '<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
+  'trophy': '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H8c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1h8c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1h-1c-.55 0-1-.45-1-1v-2.34"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+  'lightbulb': '<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
+  'camera': '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+  'upload': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',
+  'bot': '<rect width="18" height="12" x="3" y="6" rx="2"/><path d="M9 11h.01"/><path d="M15 11h.01"/><path d="M12 2v4"/><path d="M2 12h1"/><path d="M21 12h1"/>',
+  'send': '<line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+  'book-open': '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+  'user': '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  'users': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  'gamepad-2': '<line x1="6" x2="10" y1="12" y2="12"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="15" x2="15.01" y1="13" y2="13"/><line x1="18" x2="18.01" y1="11" y2="11"/><rect width="20" height="12" x="2" y="6" rx="2"/>',
+  'smartphone': '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
+  'bug': '<path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/>'
 };
 
 function lucideSvg(name, size = 16, stroke = 2, extraClass = '') {
   const content = LUCIDE_SVGS[name] || '';
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon ${extraClass}">${content}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon ${extraClass}" style="display:inline-block; vertical-align:middle;">${content}</svg>`;
 }
+
+// ════════════════════════════════════════════════
+//  MICROSOFT FLUENT 3D EMOJI ENGINE (FOR CACHIMBO)
+// ════════════════════════════════════════════════
+const FLUENT_3D_CDN_BASE = 'https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets';
+const FLUENT_3D_MAP = {
+  '📚': `${FLUENT_3D_CDN_BASE}/Books/3D/books_3d.png`,
+  '📖': `${FLUENT_3D_CDN_BASE}/Open%20book/3D/open_book_3d.png`,
+  '📝': `${FLUENT_3D_CDN_BASE}/Memo/3D/memo_3d.png`,
+  '🎓': `${FLUENT_3D_CDN_BASE}/Graduation%20cap/3D/graduation_cap_3d.png`,
+  '⚡': `${FLUENT_3D_CDN_BASE}/High%20voltage/3D/high_voltage_3d.png`,
+  '🔋': `${FLUENT_3D_CDN_BASE}/Battery/3D/battery_3d.png`,
+  '🍻': `${FLUENT_3D_CDN_BASE}/Clinking%20beer%20mugs/3D/clinking_beer_mugs_3d.png`,
+  '🍺': `${FLUENT_3D_CDN_BASE}/Beer%20mug/3D/beer_mug_3d.png`,
+  '💰': `${FLUENT_3D_CDN_BASE}/Money%20bag/3D/money_bag_3d.png`,
+  '💵': `${FLUENT_3D_CDN_BASE}/Dollar%20banknote/3D/dollar_banknote_3d.png`,
+  '🏆': `${FLUENT_3D_CDN_BASE}/Trophy/3D/trophy_3d.png`,
+  '🥇': `${FLUENT_3D_CDN_BASE}/1st%20place%20medal/3D/1st_place_medal_3d.png`,
+  '🛒': `${FLUENT_3D_CDN_BASE}/Shopping%20cart/3D/shopping_cart_3d.png`,
+  '🎮': `${FLUENT_3D_CDN_BASE}/Video%20game/3D/video_game_3d.png`,
+  '🎯': `${FLUENT_3D_CDN_BASE}/Bullseye/3D/bullseye_3d.png`,
+  '🧠': `${FLUENT_3D_CDN_BASE}/Brain/3D/brain_3d.png`,
+  '💡': `${FLUENT_3D_CDN_BASE}/Light%20bulb/3D/light_bulb_3d.png`,
+  '🔥': `${FLUENT_3D_CDN_BASE}/Fire/3D/fire_3d.png`,
+  '⭐': `${FLUENT_3D_CDN_BASE}/Star/3D/star_3d.png`,
+  '🌟': `${FLUENT_3D_CDN_BASE}/Glowing%20star/3D/glowing_star_3d.png`,
+  '🎉': `${FLUENT_3D_CDN_BASE}/Party%20popper/3D/party_popper_3d.png`,
+  '🥳': `${FLUENT_3D_CDN_BASE}/Partying%20face/3D/partying_face_3d.png`,
+  '💀': `${FLUENT_3D_CDN_BASE}/Skull/3D/skull_3d.png`,
+  '💥': `${FLUENT_3D_CDN_BASE}/Collision/3D/collision_3d.png`,
+  '🚨': `${FLUENT_3D_CDN_BASE}/Police%20car%20light/3D/police_car_light_3d.png`,
+  '☕': `${FLUENT_3D_CDN_BASE}/Hot%20beverage/3D/hot_beverage_3d.png`,
+  '🥫': `${FLUENT_3D_CDN_BASE}/Beverage%20box/3D/beverage_box_3d.png`,
+  '🍕': `${FLUENT_3D_CDN_BASE}/Pizza/3D/pizza_3d.png`,
+  '🍔': `${FLUENT_3D_CDN_BASE}/Hamburger/3D/hamburger_3d.png`,
+  '🍿': `${FLUENT_3D_CDN_BASE}/Popcorn/3D/popcorn_3d.png`,
+  '🎧': `${FLUENT_3D_CDN_BASE}/Headphone/3D/headphone_3d.png`,
+  '🕶️': `${FLUENT_3D_CDN_BASE}/Sunglasses/3D/sunglasses_3d.png`,
+  '🕶': `${FLUENT_3D_CDN_BASE}/Sunglasses/3D/sunglasses_3d.png`,
+  '🧥': `${FLUENT_3D_CDN_BASE}/Coat/3D/coat_3d.png`,
+  '🏎️': `${FLUENT_3D_CDN_BASE}/Racing%20car/3D/racing_car_3d.png`,
+  '🏎': `${FLUENT_3D_CDN_BASE}/Racing%20car/3D/racing_car_3d.png`,
+  '🛴': `${FLUENT_3D_CDN_BASE}/Kick%20scooter/3D/kick_scooter_3d.png`,
+  '💻': `${FLUENT_3D_CDN_BASE}/Laptop/3D/laptop_3d.png`,
+  '📱': `${FLUENT_3D_CDN_BASE}/Mobile%20phone/3D/mobile_phone_3d.png`,
+  '🔌': `${FLUENT_3D_CDN_BASE}/Electric%20plug/3D/electric_plug_3d.png`,
+  '🏗️': `${FLUENT_3D_CDN_BASE}/Building%20construction/3D/building_construction_3d.png`,
+  '🏗': `${FLUENT_3D_CDN_BASE}/Building%20construction/3D/building_construction_3d.png`,
+  '🎨': `${FLUENT_3D_CDN_BASE}/Artist%20palette/3D/artist_palette_3d.png`,
+  '🎭': `${FLUENT_3D_CDN_BASE}/Performing%20arts/3D/performing_arts_3d.png`,
+  '🧪': `${FLUENT_3D_CDN_BASE}/Test%20tube/3D/test_tube_3d.png`,
+  '🔬': `${FLUENT_3D_CDN_BASE}/Microscope/3D/microscope_3d.png`,
+  '📐': `${FLUENT_3D_CDN_BASE}/Triangular%20ruler/3D/triangular_ruler_3d.png`,
+  '⚖️': `${FLUENT_3D_CDN_BASE}/Balance%20scale/3D/balance_scale_3d.png`,
+  '⚖': `${FLUENT_3D_CDN_BASE}/Balance%20scale/3D/balance_scale_3d.png`,
+  '💼': `${FLUENT_3D_CDN_BASE}/Briefcase/3D/briefcase_3d.png`,
+  '👔': `${FLUENT_3D_CDN_BASE}/Necktie/3D/necktie_3d.png`,
+  '🎒': `${FLUENT_3D_CDN_BASE}/Backpack/3D/backpack_3d.png`,
+  '💎': `${FLUENT_3D_CDN_BASE}/Gem%20stone/3D/gem_stone_3d.png`,
+  '⚽': `${FLUENT_3D_CDN_BASE}/Soccer%20ball/3D/soccer_ball_3d.png`,
+  '🏀': `${FLUENT_3D_CDN_BASE}/Basketball/3D/basketball_3d.png`,
+  '🕺': `${FLUENT_3D_CDN_BASE}/Man%20dancing/Default/3D/man_dancing_3d_default.png`,
+  '💃': `${FLUENT_3D_CDN_BASE}/Woman%20dancing/Default/3D/woman_dancing_3d_default.png`,
+  '🧊': `${FLUENT_3D_CDN_BASE}/Ice/3D/ice_3d.png`,
+  '🛋️': `${FLUENT_3D_CDN_BASE}/Couch%20and%20lamp/3D/couch_and_lamp_3d.png`,
+  '🛋': `${FLUENT_3D_CDN_BASE}/Couch%20and%20lamp/3D/couch_and_lamp_3d.png`,
+  '🤓': `${FLUENT_3D_CDN_BASE}/Nerd%20face/3D/nerd_face_3d.png`,
+  '😎': `${FLUENT_3D_CDN_BASE}/Smiling%20face%20with%20sunglasses/3D/smiling_face_with_sunglasses_3d.png`,
+  '😊': `${FLUENT_3D_CDN_BASE}/Smiling%20face%20with%20smiling%20eyes/3D/smiling_face_with_smiling_eyes_3d.png`,
+  '😴': `${FLUENT_3D_CDN_BASE}/Sleeping%20face/3D/sleeping_face_3d.png`,
+  '❓': `${FLUENT_3D_CDN_BASE}/Red%20question%20mark/3D/red_question_mark_3d.png`,
+  '🚀': `${FLUENT_3D_CDN_BASE}/Rocket/3D/rocket_3d.png`,
+  '🏥': `${FLUENT_3D_CDN_BASE}/Hospital/3D/hospital_3d.png`,
+  '🚑': `${FLUENT_3D_CDN_BASE}/Ambulance/3D/ambulance_3d.png`,
+  '🚌': `${FLUENT_3D_CDN_BASE}/Bus/3D/bus_3d.png`,
+  '🚗': `${FLUENT_3D_CDN_BASE}/Automobile/3D/automobile_3d.png`,
+  '🚲': `${FLUENT_3D_CDN_BASE}/Bicycle/3D/bicycle_3d.png`,
+  '🛑': `${FLUENT_3D_CDN_BASE}/Stop%20sign/3D/stop_sign_3d.png`,
+  '🎸': `${FLUENT_3D_CDN_BASE}/Guitar/3D/guitar_3d.png`,
+  '🎹': `${FLUENT_3D_CDN_BASE}/Musical%20keyboard/3D/musical_keyboard_3d.png`,
+  '🎤': `${FLUENT_3D_CDN_BASE}/Microphone/3D/microphone_3d.png`,
+  '🎲': `${FLUENT_3D_CDN_BASE}/Game%20die/3D/game_die_3d.png`,
+  '❤️': `${FLUENT_3D_CDN_BASE}/Red%20heart/3D/red_heart_3d.png`,
+  '💔': `${FLUENT_3D_CDN_BASE}/Broken%20heart/3D/broken_heart_3d.png`,
+  '👑': `${FLUENT_3D_CDN_BASE}/Crown/3D/crown_3d.png`,
+  '⏰': `${FLUENT_3D_CDN_BASE}/Alarm%20clock/3D/alarm_clock_3d.png`,
+  '📌': `${FLUENT_3D_CDN_BASE}/Pushpin/3D/pushpin_3d.png`,
+  '🤖': `${FLUENT_3D_CDN_BASE}/Robot/3D/robot_3d.png`,
+  '🛠️': `${FLUENT_3D_CDN_BASE}/Hammer%20and%20wrench/3D/hammer_and_wrench_3d.png`,
+  '🛠': `${FLUENT_3D_CDN_BASE}/Hammer%20and%20wrench/3D/hammer_and_wrench_3d.png`,
+  '👦': `${FLUENT_3D_CDN_BASE}/Boy/Default/3D/boy_3d_default.png`,
+  '👧': `${FLUENT_3D_CDN_BASE}/Girl/Default/3D/girl_3d_default.png`,
+  '👨': `${FLUENT_3D_CDN_BASE}/Man/Default/3D/man_3d_default.png`,
+  '👩': `${FLUENT_3D_CDN_BASE}/Woman/Default/3D/woman_3d_default.png`,
+  '🧑': `${FLUENT_3D_CDN_BASE}/Person/Default/3D/person_3d_default.png`,
+  '👨‍🎓': `${FLUENT_3D_CDN_BASE}/Man%20student/Default/3D/man_student_3d_default.png`,
+  '👩‍🎓': `${FLUENT_3D_CDN_BASE}/Woman%20student/Default/3D/woman_student_3d_default.png`
+};
+
+window.getFluent3DEmoji = function(emojiStr, size = 28, extraStyle = '') {
+  if (!emojiStr) return '';
+  const clean = (typeof emojiStr === 'string' ? emojiStr : String(emojiStr)).trim();
+  const stripped = clean.replace(/[\uFE00-\uFE0F]/g, '');
+  const url = FLUENT_3D_MAP[clean] || FLUENT_3D_MAP[stripped];
+  if (url) {
+    return `<img src="${url}" alt="${clean}" class="fluent-3d-emoji" style="width:${size}px; height:${size}px; object-fit:contain; display:inline-block; vertical-align:middle; pointer-events:none; ${extraStyle}" onerror="this.outerHTML='${clean}'">`;
+  }
+  return `<span class="fluent-fallback-emoji" style="display:inline-block; font-size:${size * 0.85}px; vertical-align:middle; line-height:1; ${extraStyle}">${clean}</span>`;
+};
+
+window.renderFluent3DInText = function(text, size = 18) {
+  if (!text || typeof text !== 'string') return text;
+  return text.replace(/([\p{Emoji_Presentation}\p{Extended_Pictographic}])/gu, (match) => {
+    const clean = match.trim();
+    const stripped = clean.replace(/[\uFE00-\uFE0F]/g, '');
+    const url = FLUENT_3D_MAP[clean] || FLUENT_3D_MAP[stripped];
+    if (url) {
+      return `<img src="${url}" alt="${clean}" class="fluent-3d-emoji-inline" style="width:${size}px; height:${size}px; object-fit:contain; display:inline-block; vertical-align:-3px; margin:0 2px; pointer-events:none;" onerror="this.outerHTML='${clean}'">`;
+    }
+    return match;
+  });
+};
 
 // ════════════════════════════════════════════════
 //  PALETTE & CONSTANTS
@@ -3922,7 +4371,15 @@ window._appInit = function() {
   linkCoursesToMalla(state);
   if (window._currentUser) setSyncDot('synced');
   render();
-  switchView('dashboard');
+
+  const initialView = (typeof getViewFromHash === 'function' ? getViewFromHash() : null) || state.currentView || 'dashboard';
+  if (initialView === 'cachimbo') {
+    switchView('dashboard', true);
+    setTimeout(() => { if (typeof openCachimbo === 'function') openCachimbo(true); }, 150);
+  } else {
+    switchView(initialView, true);
+  }
+
   if (state.career === undefined) {
     // First time this account is used: ask for career (2026 only for now)
     setTimeout(()=>openCareerSheet(true), 250);
@@ -4770,7 +5227,7 @@ function activeCycleAvg() {
 // ════════════════════════════════════════════════
 //  RENDER
 // ════════════════════════════════════════════════
-function render() { renderChips(); renderPond(); renderGrid(); if (state.currentView==='dashboard') renderDashboard(); if (state.currentView==='perfil') renderPerfil(); if (state.currentView==='horario') renderHorario(); syncNavActiveState(); saveState(); }
+function render() { renderChips(); renderPond(); renderGrid(); if (state.currentView==='dashboard') renderDashboard(); if (state.currentView==='perfil') renderPerfil(); if (state.currentView==='horario') renderHorario(); if (state.currentView==='agenda') renderAgenda(); syncNavActiveState(); saveState(); }
 
 // ════════════════════════════════════════════════
 //  NAV (barra inferior en móvil / barra superior en PC)
@@ -4963,8 +5420,50 @@ function goToCourse(courseId) {
 }
 
 // ════════════════════════════════════════════════
-//  VIEW TABS (Ciclo / Dashboard / Perfil)
+//  VIEW TABS & HASH ROUTING (Dashboard / Cursos / Horario / Perfil / Cachimbo)
 // ════════════════════════════════════════════════
+const VIEW_TO_HASH = {
+  dashboard: '#/dashboard',
+  ciclo: '#/cursos',
+  horario: '#/horario',
+  agenda: '#/agenda',
+  perfil: '#/perfil'
+};
+
+const HASH_TO_VIEW = {
+  '#/cursos': 'ciclo',
+  '#/ciclo': 'ciclo',
+  '#/courses': 'ciclo',
+  '#cursos': 'ciclo',
+  '#ciclo': 'ciclo',
+  
+  '#/dashboard': 'dashboard',
+  '#/inicio': 'dashboard',
+  '#/home': 'dashboard',
+  '#dashboard': 'dashboard',
+  '#inicio': 'dashboard',
+  
+  '#/horario': 'horario',
+  '#/schedule': 'horario',
+  '#horario': 'horario',
+
+  '#/agenda': 'agenda',
+  '#/tasks': 'agenda',
+  '#agenda': 'agenda',
+  
+  '#/perfil': 'perfil',
+  '#/profile': 'perfil',
+  '#perfil': 'perfil',
+  
+  '#/cachimbo': 'cachimbo',
+  '#cachimbo': 'cachimbo'
+};
+
+function getViewFromHash(hash) {
+  const h = (hash || window.location.hash || '').toLowerCase().trim();
+  return HASH_TO_VIEW[h] || null;
+}
+
 function switchView(v, skipHistory) {
   if (state.currentView === v && document.getElementById('view' + v.charAt(0).toUpperCase() + v.slice(1))?.style.display !== 'none') return;
   state.currentView = v;
@@ -4972,13 +5471,19 @@ function switchView(v, skipHistory) {
   document.getElementById('viewDashboard').style.display = v==='dashboard' ? '' : 'none';
   document.getElementById('viewPerfil').style.display = v==='perfil' ? '' : 'none';
   const hv = document.getElementById('viewHorario'); if(hv) hv.style.display = v==='horario' ? '' : 'none';
+  const av = document.getElementById('viewAgenda'); if(av) av.style.display = v==='agenda' ? '' : 'none';
 
-  if (!skipHistory && window.history && window.history.pushState) {
+  const targetHash = VIEW_TO_HASH[v] || '#/dashboard';
+  if (window.history && window.history.pushState) {
     try {
-      if (!window.history.state || window.history.state.view !== v) {
-        history.pushState({ type: 'view', view: v }, '');
+      if (skipHistory) {
+        window.history.replaceState({ type: 'view', view: v }, '', targetHash);
+      } else if (window.location.hash !== targetHash) {
+        window.history.pushState({ type: 'view', view: v }, '', targetHash);
       }
     } catch(e) {}
+  } else {
+    window.location.hash = targetHash;
   }
 
   // Everything below the dashboard/cycle buttons must always reflect whatever
@@ -5039,125 +5544,69 @@ function courseEvalTotals(c, onlyGiven) {
 // Reutilizado tanto para "¿voy a aprobar?" (umbral = mínimo aprobatorio) como para
 // el objetivo de nota que el usuario define.
 function courseThresholdProjection(t, threshold, maxGrade) {
-  if (t.remaining<=0 || t.filledW<=0) return null;
-  const projected = Math.round((t.filledSum/t.filledW)*100)/100;
-  const neededRaw = (threshold*t.totalW - t.filledSum)/t.remaining;
-  const needed = Math.round(neededRaw*10)/10;
-  const maxPossibleRaw = (t.filledSum + maxGrade*t.remaining)/t.totalW;
-  const maxPossible = Math.round(maxPossibleRaw*10)/10;
-  return {
-    projected, needed, maxPossible,
-    impossible: maxPossibleRaw < threshold,
-    secured: neededRaw <= 0,
-    pendingCount: t.pending.length,
-    pendingEval: t.pending.length===1 ? t.pending[0] : null
-  };
-}
-function courseProjection(c) {
-  // 10.5 (no 11) porque el promedio final se calcula con Math.round (ver courseAvgFromEvals),
-  // así que un promedio real de 10.5 ya redondea a 11 y aprueba.
-  const PASS_GRADE = 10.5, MAX_GRADE = 20;
-  return courseThresholdProjection(courseEvalTotals(c, true), PASS_GRADE, MAX_GRADE);
-}
-// Mismo cálculo que courseProjection, pero contra la nota objetivo que el usuario definió
-// para el curso en vez del mínimo aprobatorio.
-function courseTargetProjection(c, target) {
-  const MAX_GRADE = 20;
-  const t = courseEvalTotals(c);
-  if (courseIsFinished(c)) {
-    const finalAvg = courseAvg(c);
+  if (!t || t.totalW <= 0 || t.filledW <= 0) return null;
+  const projected = Math.round((t.filledSum / t.filledW) * 100) / 100;
+  if (t.remaining <= 0) {
     return {
-      finished: true, projected: finalAvg, maxPossible: finalAvg, needed: null,
-      secured: finalAvg!==null && finalAvg>=target,
-      impossible: finalAvg!==null && finalAvg<target,
-      missing: finalAvg!==null ? Math.max(0, Math.round((target-finalAvg)*10)/10) : null,
-      pendingCount: 0, pendingEval: null
+      finished: true,
+      projected,
+      secured: projected >= threshold,
+      impossible: projected < threshold,
+      needed: 0,
+      neededRaw: 0,
+      maxPossible: projected,
+      missing: Math.max(0, Math.round((threshold - projected) * 10) / 10),
+      pendingCount: 0,
+      pendingEval: null
     };
   }
-  const base = courseThresholdProjection(t, target, MAX_GRADE);
-  if (!base) return null;
-  return { ...base, finished: false, missing: Math.max(0, Math.round((target-base.projected)*10)/10) };
+  const neededRaw = (threshold * t.totalW - t.filledSum) / t.remaining;
+  const needed = Math.max(0, Math.round(neededRaw * 10) / 10);
+  const maxPossibleRaw = (t.filledSum + maxGrade * t.remaining) / t.totalW;
+  const maxPossible = Math.round(maxPossibleRaw * 10) / 10;
+  const secured = (t.filledSum / t.totalW) >= threshold;
+  const impossible = neededRaw > maxGrade;
+  const pendingEval = t.pending.length === 1 ? t.pending[0] : null;
+  return {
+    finished: false,
+    projected,
+    needed,
+    neededRaw,
+    maxPossible,
+    secured,
+    impossible,
+    missing: Math.max(0, Math.round((threshold - projected) * 10) / 10),
+    pendingCount: t.pending.length,
+    pendingEval
+  };
 }
-function riskCourses() {
-  return allCoursesIn(Object.keys(state.cycles)).map(c=>({ c, avg: courseAvg(c) }))
-    .filter(o=>o.avg!==null && o.avg<11)
-    .sort((a,b)=>a.avg-b.avg);
+
+function courseProjection(c) {
+  const PASS = 10.5;
+  const t = courseEvalTotals(c, true);
+  return courseThresholdProjection(t, PASS, 20);
 }
-function renderDashboard() {
-  const totals = mallaTotals();
-  const allCourses = allCoursesIn(Object.keys(state.cycles));
-  // Créditos registrados en la app + créditos que el usuario ya llevaba antes
-  // de empezar a usarla (ej. si se une en 5to o 6to ciclo), para que el
-  // progreso de carrera sea real y no solo cuente lo cargado en la app.
-  const creditsUsed = allCourses.reduce((s,c)=>s+(c.credits||0),0) + (state.priorCredits||0);
-  const coursesDone = allCourses.filter(c=>courseAvg(c)!==null).length;
 
-  // Mismo nombre que se muestra junto al icono de engranaje/perfil (userEmailLabel),
-  // para que el saludo del Dashboard siempre coincida con esa fuente de datos.
-  const helloName = window._currentUser ? (window._currentUser.displayName || window._currentUser.email) : '';
-
-  document.getElementById('viewDashboard').innerHTML = `
-  <div class="dash-wrap">
-    <div class="dash-header-panel">
-      <div class="dash-header-top">
-        <div>
-          <div class="dash-hello">Hola${helloName?`, <b>${helloName}</b>`:''}</div>
-          <div class="dash-subtitle">Así va tu progreso académico.</div>
-        </div>
-        ${renderDashWeekBar()}
-      </div>
-      ${renderDashStatusMsg()}
-      <div class="dash-stats-strip">
-        <div class="dash-stat dash-stat--main" onclick="openPonderadoSheet()" style="cursor:pointer" title="Configurar promedio general acumulado">
-          <div class="dash-stat-label" style="display:flex;align-items:center;justify-content:space-between;gap:6px">
-            <span>Promedio general acumulado</span>
-            <button class="dash-edit-badge" onclick="event.stopPropagation();openPonderadoSheet()" title="Editar promedio general acumulado">
-              ${lucideSvg('sliders-horizontal', 13)}
-              <span>Editar</span>
-            </button>
-          </div>
-          <div class="dash-stat-val" style="color:${gradeHex(overallAvg())}">${overallAvg()??'—'}</div>
-        </div>
-        <div class="dash-stat">
-          <div class="dash-stat-label">Cursos completados</div>
-          <div class="dash-stat-val">${coursesDone} / ${totals.courses}</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="dash-primary-grid">
-      ${renderDashProjection()}
-    </div>
-
-    <div class="dash-secondary-grid">
-      ${renderDashProgress(creditsUsed, totals.credits)}
-      <div class="dash-card dash-evo-card">
-        <div class="dash-card-title">Evolución del promedio</div>
-        <div class="dash-card-subtitle">Promedio ponderado por ciclo académico</div>
-        ${renderEvolutionSvg()}
-      </div>
-    </div>
-
-    <div class="dash-tertiary-grid">
-      ${renderDashBestCourse()}
-      ${renderDashRiskiestCourse()}
-      ${renderDashRisk()}
-    </div>
-
-    ${renderDashUpcoming()}
-
-    <div class="dash-card" style="margin-top: 14px; background: linear-gradient(135deg, var(--s1) 0%, rgba(245, 106, 36, 0.08) 100%); border: 1px solid rgba(245, 106, 36, 0.35); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 14px 18px;">
-      <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 200px;">
-        <div style="font-size: 24px; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; background: var(--s2); border: 1px solid var(--border); flex-shrink: 0;">💡</div>
-        <div>
-          <div style="font-weight: 700; font-size: 14px; color: var(--text);">¿Tienes una idea o sugerencia?</div>
-          <div style="font-size: 12px; color: var(--sub); margin-top: 4px;">Ayúdanos a mejorar Promedia con tus comentarios</div>
-        </div>
-      </div>
-      <button class="btn btn-accent" onclick="openSuggestionsSheet()" style="font-size: 12px; font-weight: 800; padding: 8px 14px;">Dejar Sugerencia</button>
-    </div>
-  </div>
-  `;
+function courseTargetProjection(c, targetGrade) {
+  const target = parseFloat(targetGrade);
+  if (isNaN(target)) return null;
+  const t = courseEvalTotals(c, true);
+  if (courseIsFinished(c)) {
+    const avg = courseAvg(c);
+    if (avg === null) return null;
+    return {
+      finished: true,
+      projected: avg,
+      secured: avg >= target,
+      impossible: avg < target,
+      maxPossible: avg,
+      missing: Math.max(0, Math.round((target - avg) * 10) / 10),
+      needed: 0,
+      pendingCount: 0,
+      pendingEval: null
+    };
+  }
+  return courseThresholdProjection(t, target, 20);
 }
 
 // ════════════════════════════════════════════════
@@ -5192,8 +5641,8 @@ function renderPerfil() {
         <div class="perfil-card" style="border:2px solid var(--accent); background:linear-gradient(135deg, rgba(99, 102, 241, 0.12), var(--s1)); margin-bottom: 2px;">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
             <div style="display:flex; align-items:center; gap:12px;">
-              <div style="width:38px; height:38px; border-radius:10px; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900;">
-                👑
+              <div style="width:38px; height:38px; border-radius:10px; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center;">
+                ${lucideSvg('award', 20)}
               </div>
               <div>
                 <div style="font-weight:800; font-size:14px; color:var(--text); display:flex; align-items:center; gap:6px;">
@@ -5233,7 +5682,7 @@ function renderPerfil() {
             <div style="font-weight:600;font-size:13px;color:var(--text)">Ponderado acumulado previo</div>
             <div style="font-size:11.5px;color:var(--muted)">${state.priorPonderado !== null && state.priorPonderado !== undefined ? `${state.priorPonderado} · ${state.priorCredits || 0} créditos previos` : 'No configurado'}</div>
           </div>
-          <button class="btn" onclick="openPonderadoSheet()">Configurar</button>
+          <button class="btn" onclick="openPriorPonderadoSheet()">Configurar</button>
         </div>
       </div>
 
@@ -5251,8 +5700,8 @@ function renderPerfil() {
       <div class="perfil-card" onclick="openSuggestionsSheet()" style="cursor:pointer; border-color:rgba(245,106,36,0.35); background:linear-gradient(135deg, var(--s1) 0%, rgba(245,106,36,0.06) 100%); transition:transform 0.15s ease;" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'" onmouseleave="this.style.transform='scale(1)'">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
           <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:200px;">
-            <div style="display:flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:10px; background:var(--s2); border:1px solid var(--border); font-size:18px; flex-shrink:0;">
-              💡
+            <div style="display:flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:10px; background:var(--s2); border:1px solid var(--border); color:var(--accent); flex-shrink:0;">
+              ${lucideSvg('lightbulb', 20)}
             </div>
             <div>
               <div style="font-weight:700; font-size:13.5px; color:var(--text); display:flex; align-items:center; flex-wrap:wrap; gap:6px;">Buzón de Sugerencias <span style="font-size:9px; background:var(--accent); color:var(--accent-text); padding:2px 6px; border-radius:8px; font-weight:800; line-height:1;">NUEVO</span></div>
@@ -5275,6 +5724,17 @@ function renderPerfil() {
     </div>
   `;
 }
+
+function riskCourses() {
+  const lastKey = lastAddedCycleKey();
+  const cs = (lastKey && state.cycles[lastKey]?.courses?.length) 
+    ? state.cycles[lastKey].courses 
+    : allCoursesIn(Object.keys(state.cycles));
+  return cs
+    .map(c => ({ c, avg: courseAvg(c) }))
+    .filter(o => o.avg !== null && o.avg < 11);
+}
+
 // Mensaje breve sobre el rendimiento general — reutiliza riskCourses() y courseProjection()
 // (mismas funciones que ya alimentan "Cursos en riesgo" y "¿Voy a aprobar?"), no inventa
 // una nueva forma de decidir qué está aprobado, en riesgo o es imposible.
@@ -5652,6 +6112,96 @@ function renderDashWeekBar() {
     text = `Semana <b>${info.week}</b> de ${info.totalWeeks} · ${fmtShortDate(info.startDate)} – ${fmtShortDate(info.endDate)}`;
   }
   return `<div class="dash-week-bar" onclick="openCycleDatesSheet()" style="cursor:pointer" title="Fechas del ciclo"><div class="dash-week-text">${text}</div>${editBtn}</div>`;
+}
+
+function renderDashboard() {
+  const isGuest = !window._currentUser;
+  const rawName = window._currentUser ? (window._currentUser.displayName || window._currentUser.email || 'Estudiante') : 'Invitado';
+  const name = rawName.split(' ')[0] || rawName;
+  const lastKey = lastAddedCycleKey() || '';
+  
+  const overall = overallAvg();
+  const l3 = last3PeriodsAvg();
+  const currentAvg = activeCycleAvg();
+  
+  const totals = mallaTotals();
+  const prior = state.priorCredits || 0;
+  const allCourses = allCoursesIn(Object.keys(state.cycles));
+  const coursesCreditsInApp = allCourses.filter(c=>{
+    const avg = courseAvg(c);
+    return courseIsFinished(c) && avg!==null && avg>=11;
+  }).reduce((s,c)=>s+(c.credits||0),0);
+  const usedCredits = prior + coursesCreditsInApp;
+
+  const html = `
+    <div class="dash-wrap">
+      <div class="dash-header-panel">
+        <div class="dash-header-top">
+          <div>
+            <div class="dash-hello">Hola, <b>${name}</b></div>
+            <div class="dash-subtitle">Resumen de tu rendimiento académico</div>
+          </div>
+          ${renderDashWeekBar()}
+        </div>
+        ${renderDashStatusMsg()}
+        <div class="dash-stats-strip">
+          <div class="dash-stat dash-stat--main" onclick="openPonderadoSheet()" style="cursor:pointer" title="Configurar promedio acumulado">
+            <div class="dash-stat-label" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <span>Promedio Ponderado Acumulado</span>
+              <span class="dash-edit-badge">${lucideSvg('pencil', 11)} Editar</span>
+            </div>
+            <div class="dash-stat-val" style="color:${gradeHex(overall)}">${overall ?? '—'}</div>
+          </div>
+          <div class="dash-stat dash-stat--l3">
+            <div class="dash-stat-label">Últimos 3 Periodos</div>
+            <div class="dash-stat-val" style="color:${gradeHex(l3)}">${l3 ?? '—'}</div>
+          </div>
+          <div class="dash-stat">
+            <div class="dash-stat-label">Ciclo Actual ${lastKey ? `· ${lastKey}` : ''}</div>
+            <div class="dash-stat-val" style="color:${gradeHex(currentAvg)}">${currentAvg ?? '—'}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-primary-grid">
+        ${renderDashProjection()}
+      </div>
+
+      <div class="dash-secondary-grid">
+        ${renderDashRendimiento()}
+        ${renderDashProgress(usedCredits, totals.credits)}
+      </div>
+
+      <div class="dash-tertiary-grid">
+        ${renderDashBestCourse()}
+        ${renderDashRiskiestCourse()}
+        ${renderDashRisk()}
+      </div>
+
+      <div class="dash-card dash-evo-card">
+        <div class="dash-card-title">Evolución de promedio por ciclo</div>
+        ${renderEvolutionSvg()}
+      </div>
+
+      ${renderDashUpcoming()}
+
+      <div class="dash-card" style="margin-top: 14px; background: linear-gradient(135deg, var(--s1) 0%, rgba(245, 106, 36, 0.08) 100%); border: 1px solid rgba(245, 106, 36, 0.35); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 14px 18px;">
+        <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 200px;">
+          <div style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; background: var(--s2); border: 1px solid var(--border); flex-shrink: 0; color: var(--accent);">
+            ${lucideSvg('lightbulb', 22)}
+          </div>
+          <div>
+            <div style="font-weight: 700; font-size: 14px; color: var(--text);">¿Tienes una idea o sugerencia?</div>
+            <div style="font-size: 12px; color: var(--sub); margin-top: 4px;">Ayúdanos a mejorar Promedia con tus comentarios</div>
+          </div>
+        </div>
+        <button class="btn btn-accent" onclick="openSuggestionsSheet()" style="font-size: 12px; font-weight: 800; padding: 8px 14px;">Dejar Sugerencia</button>
+      </div>
+    </div>
+  `;
+
+  const el = document.getElementById('viewDashboard');
+  if (el) el.innerHTML = html;
 }
 function openCycleDatesSheet() {
   const key = lastAddedCycleKey();
@@ -7363,25 +7913,63 @@ function loadCourseScheduleUI(cid) {
 
 function renderHorarioSessionsUI() {
   const container = document.getElementById('horarioSessionsContainer');
-  container.innerHTML = currentEditSchedule.map((s, i) => `
-    <div style="display:flex; flex-direction:column; gap:8px; background:var(--s1); padding:12px; border-radius:10px; border:1px solid var(--border);">
-      <div style="display:flex; gap:6px; align-items:center; flex-wrap:nowrap;">
-        <select class="field-input" style="padding:8px 4px; flex:0.8; font-size:12px; min-width:0;" onchange="currentEditSchedule[${i}].day = this.value">
-          <option value="">Día</option>
-          <option value="1" ${s.day==='1'?'selected':''}>Lun</option>
-          <option value="2" ${s.day==='2'?'selected':''}>Mar</option>
-          <option value="3" ${s.day==='3'?'selected':''}>Mié</option>
-          <option value="4" ${s.day==='4'?'selected':''}>Jue</option>
-          <option value="5" ${s.day==='5'?'selected':''}>Vie</option>
-          <option value="6" ${s.day==='6'?'selected':''}>Sáb</option>
-        </select>
-        <input class="field-input" type="time" style="padding:8px 4px; flex:1; font-size:12px;" value="${s.start||''}" onchange="currentEditSchedule[${i}].start = this.value">
-        <input class="field-input" type="time" style="padding:8px 4px; flex:1; font-size:12px;" value="${s.end||''}" onchange="currentEditSchedule[${i}].end = this.value">
-        <button style="background:none; border:none; color:var(--red); font-weight:bold; font-size:20px; padding:0 4px; cursor:pointer;" onclick="removeHorarioSession(${i})">×</button>
+  if (!container) return;
+  if (!currentEditSchedule || currentEditSchedule.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:16px; color:var(--muted); font-size:12px; background:var(--s1); border-radius:10px; border:1px dashed var(--border);">
+        No hay sesiones configuradas para este curso. Haz clic en "Añadir sesión" para agregar una.
       </div>
-      <input class="field-input" type="text" placeholder="Salón / Aula (Opcional, ej: D3-301)" style="padding:8px; font-size:12px;" value="${s.room||''}" oninput="currentEditSchedule[${i}].room = this.value">
+    `;
+    return;
+  }
+
+  container.innerHTML = currentEditSchedule.map((s, i) => `
+    <div class="horario-session-card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:11px; font-weight:700; color:var(--sub); text-transform:uppercase; letter-spacing:0.05em; display:inline-flex; align-items:center; gap:5px;">
+          ${lucideSvg('clock', 12, 2)} Sesión ${i + 1}
+        </span>
+        <button type="button" style="background:transparent; border:none; color:var(--red); font-size:11.5px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px; padding:2px 6px; border-radius:6px; transition:opacity 0.15s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'" onclick="removeHorarioSession(${i})">
+          ${lucideSvg('trash-2', 12, 2)}
+          <span>Eliminar</span>
+        </button>
+      </div>
+
+      <div class="horario-session-grid">
+        <div class="session-field-col">
+          <label>Día</label>
+          <select class="field-input session-field" onchange="currentEditSchedule[${i}].day = this.value">
+            <option value="">Seleccionar</option>
+            <option value="1" ${s.day==='1'?'selected':''}>Lunes</option>
+            <option value="2" ${s.day==='2'?'selected':''}>Martes</option>
+            <option value="3" ${s.day==='3'?'selected':''}>Miércoles</option>
+            <option value="4" ${s.day==='4'?'selected':''}>Jueves</option>
+            <option value="5" ${s.day==='5'?'selected':''}>Viernes</option>
+            <option value="6" ${s.day==='6'?'selected':''}>Sábado</option>
+          </select>
+        </div>
+
+        <div class="session-field-col">
+          <label>Hora Inicio</label>
+          <input class="field-input session-field" type="time" value="${s.start||''}" onchange="currentEditSchedule[${i}].start = this.value">
+        </div>
+
+        <div class="session-field-col">
+          <label>Hora Fin</label>
+          <input class="field-input session-field" type="time" value="${s.end||''}" onchange="currentEditSchedule[${i}].end = this.value">
+        </div>
+      </div>
+
+      <div class="session-field-col">
+        <label>Aula / Salón <span style="font-weight:400; opacity:0.65; text-transform:none;">(Opcional)</span></label>
+        <input class="field-input session-field" type="text" placeholder="Ej: Pabellón D - Aula 301" value="${s.room||''}" oninput="currentEditSchedule[${i}].room = this.value">
+      </div>
     </div>
   `).join('');
+
+  if (typeof PromediaDropdown !== 'undefined' && PromediaDropdown.initAll) {
+    PromediaDropdown.initAll(container);
+  }
 }
 
 function addHorarioSession() {
@@ -7430,17 +8018,21 @@ function renderHorario() {
   if(cs.length === 0) {
     container.innerHTML = `
       <div style="padding:40px 20px; text-align:center; color:var(--muted); font-size:14px; max-width:440px; margin:0 auto;">
-        <div style="font-size:32px; margin-bottom:10px;">📅</div>
+        <div style="margin-bottom:12px; color:var(--muted); display:flex; justify-content:center;">
+          ${lucideSvg('calendar', 36, 1.8)}
+        </div>
         <div style="color:var(--text); font-weight:600; font-size:15px; margin-bottom:6px;">Sin horario en el Ciclo ${state.currentCycle}</div>
         <div style="color:var(--muted); font-size:12.5px; line-height:1.4; margin-bottom:18px;">
           Sube una captura de tu horario de matrícula o ingresa las clases manualmente para visualizar tu semana.
         </div>
         <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
           <button class="btn" style="background:linear-gradient(45deg, #a855f7, #6366f1); color:white; border:none; display:inline-flex; align-items:center; gap:6px; font-weight:600; padding:10px 16px; box-shadow:0 3px 12px rgba(168,85,247,0.35);" onclick="triggerHorarioUpload()">
-            ✨ Escanear Horario con IA
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+            <span>Escanear Horario con IA</span>
           </button>
-          <button class="btn" style="background:var(--s2); border:1px solid var(--border);" onclick="openEditHorarioSheet()">
-            ＋ Configurar manual
+          <button class="btn" style="background:var(--s2); border:1px solid var(--border); display:inline-flex; align-items:center; gap:6px;" onclick="openEditHorarioSheet()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Configurar manual</span>
           </button>
         </div>
       </div>`;
@@ -7878,21 +8470,23 @@ function renderArchetypes() {
         let a = simArchetypes[k];
         
         let boostsHtml = '';
-        const icons = { study: '📚', energy: '🔋', social: '🍻', money: '💰' };
+        const icons = { study: '📚', energy: '⚡', social: '🍻', money: '💰' };
         for (let stat in a.boosts) {
             let val = a.boosts[stat];
             if (val !== 0) {
                 let color = val > 0 ? 'var(--green)' : 'var(--red)';
                 let sign = val > 0 ? '+' : '';
-                boostsHtml += `<span style="color:${color}; display:flex; align-items:center; gap:4px;">${sign}${val} <span style="font-size:14px;">${icons[stat]}</span></span>`;
+                const iconRendered = typeof getFluent3DEmoji === 'function' ? getFluent3DEmoji(icons[stat], 14) : icons[stat];
+                boostsHtml += `<span style="color:${color}; display:flex; align-items:center; gap:4px;">${sign}${val} ${iconRendered}</span>`;
             }
         }
         if(!boostsHtml) boostsHtml = `<span style="color:var(--sub);">Equilibrado</span>`;
 
+        const archEmoji = typeof getFluent3DEmoji === 'function' ? getFluent3DEmoji(a.emoji, 22) : a.emoji;
         html += `
         <div onclick="selectArch('${k}')" id="arch_${k}" class="arch-card" style="padding:10px; border-radius:12px; border:2px solid var(--border2); background:var(--s1); cursor:pointer; transition:transform 0.2s var(--ease-spring), border-color 0.2s, background 0.2s, box-shadow 0.2s; display:flex; flex-direction:column; justify-content:space-between;" onmousedown="this.style.transform='scale(0.96)'" onmouseup="this.style.transform='scale(1)'">
             <div>
-                <div style="font-size:13px; font-weight:900; margin-bottom:4px; display:flex; align-items:center; gap:6px; text-transform:uppercase; letter-spacing:-0.5px; line-height:1.1;">${a.emoji} ${a.name}</div>
+                <div style="font-size:13px; font-weight:900; margin-bottom:4px; display:flex; align-items:center; gap:6px; text-transform:uppercase; letter-spacing:-0.5px; line-height:1.1;">${archEmoji} <span>${a.name}</span></div>
                 <p style="font-size:11px; color:var(--sub); margin:0 0 8px 0; font-weight:600; line-height:1.2;">${a.desc}</p>
             </div>
             <div style="display:flex; flex-wrap:wrap; gap:6px; font-size:10px; font-weight:900;">
@@ -8319,13 +8913,14 @@ function parseGenderText(text) {
 
 function formatEffects(eff) {
     let html = '';
-    const icons = { study: '📚', energy: '🔋', social: '🍻', money: '💰' };
+    const icons = { study: '📚', energy: '⚡', social: '🍻', money: '💰' };
     for (let k in eff) {
         let v = eff[k];
         if(v !== 0) {
             let color = v > 0 ? 'var(--green)' : 'var(--red)';
             let sign = v > 0 ? '+' : '';
-            html += `<span style="color:${color}; display:flex; align-items:center; gap:4px;">${sign}${v} ${icons[k]}</span>`;
+            const iconRendered = typeof getFluent3DEmoji === 'function' ? getFluent3DEmoji(icons[k], 14) : icons[k];
+            html += `<span style="color:${color}; display:flex; align-items:center; gap:4px;">${sign}${v} ${iconRendered}</span>`;
         }
     }
     return html;
@@ -8387,8 +8982,15 @@ function renderSimEvent() {
     if (!simGame.usedEvents) simGame.usedEvents = [];
     if (!simGame.usedEvents.includes(ev.title)) simGame.usedEvents.push(ev.title);
     
-    document.getElementById('gameEventEmoji').textContent = ev.emoji;
-    document.getElementById('gameEventBgEmoji').textContent = ev.emoji;
+    const emojiTarget = document.getElementById('gameEventEmoji');
+    const bgEmojiTarget = document.getElementById('gameEventBgEmoji');
+    if (emojiTarget) {
+        emojiTarget.innerHTML = typeof getFluent3DEmoji === 'function' ? getFluent3DEmoji(ev.emoji, 64) : ev.emoji;
+    }
+    if (bgEmojiTarget) {
+        bgEmojiTarget.innerHTML = typeof getFluent3DEmoji === 'function' ? getFluent3DEmoji(ev.emoji, 130, 'opacity:0.06; filter:blur(1px);') : ev.emoji;
+    }
+    
     document.getElementById('gameEventTitle').textContent = parseGenderText(ev.title);
     document.getElementById('gameEventDesc').textContent = parseGenderText(ev.desc);
     
@@ -9406,7 +10008,10 @@ function showTiendaNotice(msg, isError = false) {
 function renderTienda() {
     let money = (simGame && simGame.stats && typeof simGame.stats.money === 'number') ? simGame.stats.money : 0;
     let moneyEl = document.getElementById('tiendaMoneyDisplay');
-    if (moneyEl) moneyEl.textContent = `💰 ${money}`;
+    if (moneyEl) {
+        const bag = typeof getFluent3DEmoji === 'function' ? getFluent3DEmoji('💰', 18) : '💰';
+        moneyEl.innerHTML = `${bag} S/. ${money}`;
+    }
     
     let html = '';
     storeItems.forEach(item => {
@@ -9417,19 +10022,22 @@ function renderTienda() {
             let color = v > 0 ? 'var(--green)' : 'var(--red)';
             let sign = v > 0 ? '+' : '';
             let label = k === 'study' ? 'Estudio' : (k === 'energy' ? 'Energía' : 'Social');
-            let icon = k === 'study' ? '📚' : (k === 'energy' ? '🔋' : '🍻');
-            effHtml += `<span style="background:${v > 0 ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)'}; border:1px solid ${v > 0 ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}; color:${color}; font-size:10.5px; font-weight:800; padding:2px 7px; border-radius:6px; margin-right:4px;">${icon} ${sign}${v} ${label}</span>`;
+            let iconChar = k === 'study' ? '📚' : (k === 'energy' ? '⚡' : '🍻');
+            let icon = typeof getFluent3DEmoji === 'function' ? getFluent3DEmoji(iconChar, 14) : iconChar;
+            effHtml += `<span style="background:${v > 0 ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)'}; border:1px solid ${v > 0 ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}; color:${color}; font-size:10.5px; font-weight:800; padding:2px 7px; border-radius:6px; margin-right:4px; display:inline-flex; align-items:center; gap:4px;">${icon} ${sign}${v} ${label}</span>`;
         }
         
         let opacityStyle = canAfford ? 'opacity:1;' : 'opacity:0.65;';
         let btnBg = canAfford ? 'var(--accent)' : 'var(--s2)';
         let btnColor = canAfford ? '#fff' : 'var(--muted)';
         let btnBorder = canAfford ? 'transparent' : 'var(--border2)';
+        let itemEmoji = typeof getFluent3DEmoji === 'function' ? getFluent3DEmoji(item.emoji, 32) : item.emoji;
+        let moneyEmoji = typeof getFluent3DEmoji === 'function' ? getFluent3DEmoji('💰', 14) : '💰';
         
         html += `
         <div onclick="buyGameItem('${item.id}')" style="${opacityStyle} display:flex; align-items:center; background:var(--bg); border:1px solid var(--border2); border-radius:14px; padding:12px 14px; gap:12px; cursor:pointer; transition:all 0.15s ease; box-shadow:0 2px 6px rgba(0,0,0,0.02);" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'">
-            <div style="font-size:26px; background:var(--s2); width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:1px solid var(--border2);">
-                ${item.emoji}
+            <div style="background:var(--s2); width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:1px solid var(--border2);">
+                ${itemEmoji}
             </div>
             
             <div style="flex:1; min-width:0;">
@@ -9442,7 +10050,7 @@ function renderTienda() {
             
             <div style="flex-shrink:0; text-align:right;">
                 <button style="background:${btnBg}; color:${btnColor}; border:1px solid ${btnBorder}; border-radius:8px; padding:8px 12px; font-weight:900; font-size:13px; cursor:pointer; pointer-events:none; display:flex; align-items:center; gap:4px; transition:all 0.15s;">
-                    <span>${item.cost}</span> <span>💰</span>
+                    <span>${item.cost}</span> <span>${moneyEmoji}</span>
                 </button>
             </div>
         </div>`;
@@ -9568,9 +10176,10 @@ function openLogrosSheet() {
     
     ALL_ACHIEVEMENTS.forEach(ach => {
         let isUnlocked = unlocked.includes(ach.id);
+        let iconHtml = typeof getFluent3DEmoji === 'function' ? getFluent3DEmoji(ach.icon, 34) : ach.icon;
         html += `
             <div style="background:var(--s1); border:1px solid ${isUnlocked ? 'var(--accent)' : 'var(--border2)'}; border-radius:12px; padding:16px; opacity:${isUnlocked ? 1 : 0.5}; display:flex; align-items:center; gap:16px;">
-                <div style="font-size:32px; filter:${isUnlocked ? 'none' : 'grayscale(100%)'};${!isUnlocked ? 'opacity:0.3' : ''}">${ach.icon}</div>
+                <div style="width:40px; height:40px; display:flex; align-items:center; justify-content:center; flex-shrink:0; filter:${isUnlocked ? 'none' : 'grayscale(100%)'};${!isUnlocked ? 'opacity:0.35' : ''}">${iconHtml}</div>
                 <div>
                     <div style="font-size:16px; font-weight:900; color:${isUnlocked ? 'var(--text)' : 'var(--sub)'};">${isUnlocked ? ach.name : '???'}</div>
                     <div style="font-size:12px; font-weight:600; color:var(--muted); margin-top:4px;">${ach.desc}</div>
@@ -9590,10 +10199,11 @@ function openLogrosSheet() {
             sheet.remove();
         }
     };
+    const trophyHeader = typeof getFluent3DEmoji === 'function' ? getFluent3DEmoji('🏆', 22) : '🏆';
     sheet.innerHTML = `
         <div class="sheet" style="max-height:85vh; display:flex; flex-direction:column;">
             <div class="sheet-handle"></div>
-            <div class="sheet-title">🏆 Logros</div>
+            <div class="sheet-title" style="display:flex; align-items:center; justify-content:center; gap:8px;">${trophyHeader} <span>Logros</span></div>
             <div class="sheet-body" style="padding:0; overflow-y:auto; flex:1;">${html}</div>
             <div class="sheet-actions">
                 <button class="btn btn-accent" style="width:100%" onclick="document.getElementById('logrosSheet').remove()">Cerrar</button>
@@ -9780,8 +10390,10 @@ window.openCachimbo = function(skipHistory) {
     screen.style.animation = 'cachimboEnter 0.2s ease forwards';
     if (!skipHistory && window.history && window.history.pushState) {
         try {
-            history.pushState({ type: 'cachimbo' }, '');
+            history.pushState({ type: 'cachimbo' }, '', '#/cachimbo');
         } catch(e) {}
+    } else if (!skipHistory) {
+        window.location.hash = '#/cachimbo';
     }
 
     const devBtn = document.getElementById('btnHeaderDevMode');
@@ -9798,9 +10410,18 @@ window.closeCachimbo = function(skipHistory) {
     if (!screen) return;
     screen.style.animation = 'cachimboLeave 0.2s ease forwards';
     setTimeout(() => { screen.style.display = 'none'; }, 200);
+    const curHash = (typeof VIEW_TO_HASH !== 'undefined' ? VIEW_TO_HASH[state?.currentView || 'dashboard'] : '#/dashboard') || '#/dashboard';
     if (!skipHistory && window.history && window.history.state && window.history.state.type === 'cachimbo') {
         try {
             history.back();
+        } catch(e) {}
+    } else if (window.location.hash === '#/cachimbo' || window.location.hash === '#cachimbo') {
+        try {
+            if (window.history && window.history.replaceState) {
+                history.replaceState({ type: 'view', view: state?.currentView || 'dashboard' }, '', curHash);
+            } else {
+                window.location.hash = curHash;
+            }
         } catch(e) {}
     }
 };
@@ -9996,7 +10617,9 @@ window.renderAdminStats = async function() {
           <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:230px; flex-wrap:wrap;">
             <!-- Buscador -->
             <div style="position:relative; flex:1; min-width:140px;">
-              <span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:11px; opacity:0.5; pointer-events:none;">🔍</span>
+              <span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); display:flex; align-items:center; color:var(--muted); pointer-events:none;">
+                ${lucideSvg('search', 13)}
+              </span>
               <input type="text" id="adminUserSearchInput" value="${_adminUsersSearchQuery}" placeholder="Buscar correo, nombre o UID..." oninput="handleAdminUserSearch(this.value)" style="width:100%; box-sizing:border-box; padding:5px 8px 5px 26px; font-size:11.5px; border-radius:8px; background:var(--s1); border:1px solid var(--border2); color:var(--text); outline:none;">
             </div>
 
@@ -10004,14 +10627,14 @@ window.renderAdminStats = async function() {
             <div style="display:flex; align-items:center; gap:4px;">
               <span style="font-size:10.5px; font-weight:800; color:var(--muted); text-transform:uppercase; white-space:nowrap;">Ordenar:</span>
               <select id="adminUserSortSelect" onchange="handleAdminUserSortChange(this.value)" style="padding:5px 8px; font-size:11px; font-weight:700; border-radius:8px; background:var(--s1); border:1px solid var(--border2); color:var(--text); outline:none; cursor:pointer;">
-                <option value="date_desc" ${_adminUsersSortBy === 'date_desc' ? 'selected' : ''}>🕒 Más recientes</option>
-                <option value="date_asc" ${_adminUsersSortBy === 'date_asc' ? 'selected' : ''}>🕒 Más antiguos</option>
-                <option value="name_asc" ${_adminUsersSortBy === 'name_asc' ? 'selected' : ''}>🔤 Nombre (A-Z)</option>
-                <option value="name_desc" ${_adminUsersSortBy === 'name_desc' ? 'selected' : ''}>🔤 Nombre (Z-A)</option>
-                <option value="email_asc" ${_adminUsersSortBy === 'email_asc' ? 'selected' : ''}>📧 Correo (A-Z)</option>
-                <option value="career_asc" ${_adminUsersSortBy === 'career_asc' ? 'selected' : ''}>🎓 Carrera (A-Z)</option>
-                <option value="cycles_desc" ${_adminUsersSortBy === 'cycles_desc' ? 'selected' : ''}>📚 Mayor cant. ciclos</option>
-                <option value="cachimbo_desc" ${_adminUsersSortBy === 'cachimbo_desc' ? 'selected' : ''}>🎮 Cachimbo activos</option>
+                <option value="date_desc" ${_adminUsersSortBy === 'date_desc' ? 'selected' : ''}>Más recientes</option>
+                <option value="date_asc" ${_adminUsersSortBy === 'date_asc' ? 'selected' : ''}>Más antiguos</option>
+                <option value="name_asc" ${_adminUsersSortBy === 'name_asc' ? 'selected' : ''}>Nombre (A-Z)</option>
+                <option value="name_desc" ${_adminUsersSortBy === 'name_desc' ? 'selected' : ''}>Nombre (Z-A)</option>
+                <option value="email_asc" ${_adminUsersSortBy === 'email_asc' ? 'selected' : ''}>Correo (A-Z)</option>
+                <option value="career_asc" ${_adminUsersSortBy === 'career_asc' ? 'selected' : ''}>Carrera (A-Z)</option>
+                <option value="cycles_desc" ${_adminUsersSortBy === 'cycles_desc' ? 'selected' : ''}>Mayor cant. ciclos</option>
+                <option value="cachimbo_desc" ${_adminUsersSortBy === 'cachimbo_desc' ? 'selected' : ''}>Cachimbo activos</option>
               </select>
             </div>
           </div>
@@ -10156,7 +10779,7 @@ window.renderAdminUsersTableRows = function() {
   if (pageItems.length === 0) {
     ctn.innerHTML = `
       <div style="text-align:center; padding:32px 16px; background:var(--bg); border:1px solid var(--border2); border-radius:12px; color:var(--muted);">
-        <div style="font-size:24px; margin-bottom:6px;">🔍</div>
+        <div style="margin-bottom:6px; display:flex; justify-content:center; color:var(--muted);">${lucideSvg('search', 24)}</div>
         <div style="font-size:12.5px; font-weight:800; color:var(--text);">No se encontraron usuarios</div>
         <div style="font-size:11px; margin-top:2px;">Prueba ajustando el término de búsqueda o cambiando el filtro de ordenación.</div>
       </div>
@@ -10200,9 +10823,10 @@ window.renderAdminUsersTableRows = function() {
         <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
           <span style="font-size:10px; background:var(--s2); border:1px solid var(--border2); color:var(--sub); padding:3px 7px; border-radius:6px; font-weight:700; max-width:130px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="${car}">${car}</span>
           <span style="font-size:10px; background:rgba(99,102,241,0.1); color:var(--accent); padding:3px 7px; border-radius:6px; font-weight:800;">${cycles} ciclos</span>
-          <span style="font-size:10px; color:var(--muted); font-weight:600;">🕒 ${lastStr}</span>
-          <button onclick="openAdminUserModal('${u.id}')" style="background:var(--s2); border:1px solid var(--border2); color:var(--text); border-radius:6px; padding:4px 8px; font-size:11px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:3px;">
-            <span>👁️ Detalle</span>
+          <span style="font-size:10px; color:var(--muted); font-weight:600; display:inline-flex; align-items:center; gap:3px;">${lucideSvg('clock', 11)} ${lastStr}</span>
+          <button onclick="openAdminUserModal('${u.id}')" style="background:var(--s2); border:1px solid var(--border2); color:var(--text); border-radius:6px; padding:4px 8px; font-size:11px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+            ${lucideSvg('eye', 12)}
+            <span>Detalle</span>
           </button>
         </div>
       </div>
@@ -10250,16 +10874,29 @@ window.openAdminUserModal = function(uid) {
   modalBody.innerHTML = `
     <div style="background:var(--s1); border:1px solid var(--border2); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:8px;">
       <div style="font-size:13px; font-weight:900; color:var(--text);">${name}</div>
-      <div style="font-size:11px; color:var(--sub);">📧 <b>Correo Actual:</b> ${u.email || '<span style="color:var(--amber);">Sin correo vinculado</span>'}</div>
-      <div style="font-size:11px; color:var(--sub);">🎓 <b>Carrera:</b> ${car}</div>
-      <div style="font-size:11px; color:var(--sub);">📅 <b>Último acceso:</b> ${u.lastLogin ? new Date(u.lastLogin).toLocaleString() : (u.updatedAt ? new Date(u.updatedAt).toLocaleString() : 'N/A')}</div>
-      <div style="font-size:11px; color:var(--sub);">🆔 <b>UID:</b> <code style="background:var(--s2); padding:2px 4px; border-radius:4px;">${u.id}</code></div>
+      <div style="font-size:11px; color:var(--sub); display:flex; align-items:center; gap:6px;">
+        <span style="color:var(--accent);">${lucideSvg('mail', 13)}</span>
+        <span><b>Correo Actual:</b> ${u.email || '<span style="color:var(--amber);">Sin correo vinculado</span>'}</span>
+      </div>
+      <div style="font-size:11px; color:var(--sub); display:flex; align-items:center; gap:6px;">
+        <span style="color:var(--accent);">${lucideSvg('graduation-cap', 13)}</span>
+        <span><b>Carrera:</b> ${car}</span>
+      </div>
+      <div style="font-size:11px; color:var(--sub); display:flex; align-items:center; gap:6px;">
+        <span style="color:var(--accent);">${lucideSvg('calendar', 13)}</span>
+        <span><b>Último acceso:</b> ${u.lastLogin ? new Date(u.lastLogin).toLocaleString() : (u.updatedAt ? new Date(u.updatedAt).toLocaleString() : 'N/A')}</span>
+      </div>
+      <div style="font-size:11px; color:var(--sub); display:flex; align-items:center; gap:6px;">
+        <span style="color:var(--muted);">${lucideSvg('user', 13)}</span>
+        <span><b>UID:</b> <code style="background:var(--s2); padding:2px 4px; border-radius:4px;">${u.id}</code></span>
+      </div>
     </div>
 
     <!-- Asignar o Editar correo -->
     <div style="background:var(--s1); border:1px solid var(--accent); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:8px;">
       <div style="font-size:11.5px; font-weight:800; color:var(--text); display:flex; align-items:center; gap:6px;">
-        <span>✏️ Asignar o Cambiar Correo</span>
+        <span style="color:var(--accent);">${lucideSvg('edit-3', 13)}</span>
+        <span>Asignar o Cambiar Correo</span>
       </div>
       <div style="display:flex; gap:8px;">
         <input type="email" id="adminAssignEmailInp_${u.id}" value="${u.email || ''}" placeholder="ej: alumno@aloe.ulima.edu.pe" style="flex:1; padding:7px 10px; font-size:12px; border-radius:8px; border:1px solid var(--border2); background:var(--bg); color:var(--text); outline:none;">
@@ -10268,12 +10905,18 @@ window.openAdminUserModal = function(uid) {
     </div>
 
     <div style="background:var(--s1); border:1px solid var(--border2); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:6px;">
-      <div style="font-size:12px; font-weight:800; color:var(--text);">📚 Registro Académico</div>
+      <div style="font-size:12px; font-weight:800; color:var(--text); display:flex; align-items:center; gap:6px;">
+        <span style="color:var(--accent);">${lucideSvg('book-open', 13)}</span>
+        <span>Registro Académico</span>
+      </div>
       <div style="font-size:11px; color:var(--sub);">${stateInfo}</div>
     </div>
 
     <div style="background:var(--s1); border:1px solid var(--border2); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:6px;">
-      <div style="font-size:12px; font-weight:800; color:var(--text);">🎮 Simulador Cachimbo</div>
+      <div style="font-size:12px; font-weight:800; color:var(--text); display:flex; align-items:center; gap:6px;">
+        <span style="color:var(--accent);">${lucideSvg('gamepad-2', 13)}</span>
+        <span>Simulador Cachimbo</span>
+      </div>
       <div style="font-size:11px; color:var(--sub);">${simInfo}</div>
     </div>
   `;
@@ -10614,7 +11257,7 @@ window.renderAdminSuggestions = async function() {
     if (items.length === 0) {
       ctn.innerHTML = `
         <div style="text-align:center; padding:40px 20px; color:var(--sub); background:var(--s1); border:1px solid var(--border2); border-radius:16px;">
-          <div style="font-size:36px; margin-bottom:8px;">💡</div>
+          <div style="color:var(--accent); margin-bottom:8px; display:flex; justify-content:center;">${lucideSvg('lightbulb', 36)}</div>
           <div style="font-size:14px; font-weight:800; color:var(--text);">No hay sugerencias registradas aún</div>
           <div style="font-size:12px; margin-top:4px;">Los comentarios enviados por los alumnos aparecerán aquí.</div>
         </div>
@@ -10623,8 +11266,9 @@ window.renderAdminSuggestions = async function() {
     }
 
     let html = `
-      <div style="font-size:13px; font-weight:900; color:var(--text); margin-bottom:4px;">
-        💡 Sugerencias y Comentarios de Usuarios (${items.length})
+      <div style="font-size:13px; font-weight:900; color:var(--text); margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+        <span style="color:var(--accent);">${lucideSvg('lightbulb', 16)}</span>
+        <span>Sugerencias y Comentarios de Usuarios (${items.length})</span>
       </div>
       <div style="display:flex; flex-direction:column; gap:10px;">
     `;
@@ -10637,15 +11281,16 @@ window.renderAdminSuggestions = async function() {
       html += `
         <div style="background:var(--s1); border:1px solid var(--border2); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:8px;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-size:11px; font-weight:800; color:var(--accent);">👤 ${email}</span>
-            <span style="font-size:10px; color:var(--muted);">📅 ${dateStr}</span>
+            <span style="font-size:11px; font-weight:800; color:var(--accent); display:inline-flex; align-items:center; gap:4px;">${lucideSvg('user', 12)} ${email}</span>
+            <span style="font-size:10px; color:var(--muted); display:inline-flex; align-items:center; gap:4px;">${lucideSvg('calendar', 12)} ${dateStr}</span>
           </div>
           <div style="font-size:13px; color:var(--text); line-height:1.5; background:var(--bg); padding:10px 12px; border-radius:10px; border:1px solid var(--border2);">
             ${text}
           </div>
           <div style="display:flex; justify-content:flex-end;">
-            <button onclick="deleteAdminSuggestion('${s.id}')" style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.3); color:var(--red); font-size:11px; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">
-              🗑️ Eliminar
+            <button onclick="deleteAdminSuggestion('${s.id}')" style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239, 68, 68, 0.3); color:var(--red); font-size:11px; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+              ${lucideSvg('trash-2', 12)}
+              <span>Eliminar</span>
             </button>
           </div>
         </div>
@@ -10657,7 +11302,7 @@ window.renderAdminSuggestions = async function() {
   } catch(e) {
     ctn.innerHTML = `
       <div style="text-align:center; padding:30px 20px; color:var(--sub); background:var(--s1); border:1px solid var(--border2); border-radius:16px;">
-        <div style="font-size:32px; margin-bottom:8px;">💡</div>
+        <div style="color:var(--accent); margin-bottom:8px; display:flex; justify-content:center;">${lucideSvg('lightbulb', 32)}</div>
         <div style="font-size:13px; font-weight:800; color:var(--text);">Buzón de Sugerencias</div>
         <div style="font-size:11px; color:var(--sub); margin-top:4px;">No se pudieron leer las sugerencias desde este cliente o no existen registros aún.</div>
       </div>
@@ -10774,7 +11419,7 @@ window.renderDevEventsList = function() {
     if (filtered.length === 0) {
         ctn.innerHTML = `
             <div style="text-align:center; padding:40px 20px; color:var(--muted);">
-                <div style="font-size:36px; margin-bottom:8px;">🔍</div>
+                <div style="margin-bottom:8px; display:flex; justify-content:center; color:var(--muted);">${lucideSvg('search', 32)}</div>
                 <div style="font-size:14px; font-weight:800; color:var(--text);">No se encontraron eventos con estos filtros</div>
                 <div style="font-size:12px; margin-top:4px;">Intenta cambiando la búsqueda o seleccionando "Todas las Carreras".</div>
             </div>
@@ -11059,7 +11704,7 @@ window.handleCachimboCloseClick = function(e) {
     cachimboCloseTapCount++;
     
     if (cachimboCloseTapTimer) clearTimeout(cachimboCloseTapTimer);
-    if (cachimboCloseSingleTimer) clearTimeout(cachimboSingleTimer);
+    if (cachimboCloseSingleTimer) clearTimeout(cachimboCloseSingleTimer);
     
     if (cachimboCloseTapCount >= 3) {
         cachimboCloseTapCount = 0;
@@ -11169,16 +11814,34 @@ document.querySelectorAll('.overlay').forEach(o => {
     // 3. Handle navigation between main tabs (Ciclo, Dashboard, Perfil, Horario)
     if (e.state && e.state.type === 'view' && e.state.view) {
       switchView(e.state.view, true);
-    } else if (typeof state !== 'undefined' && state.currentView !== 'dashboard') {
-      switchView('dashboard', true);
     } else {
-      // Re-push guard state so pressing back on home tab asks or stays
-      try {
-        history.pushState({ type: 'view', view: 'dashboard' }, '');
-      } catch(e) {}
-      if (typeof showToast === 'function') {
-        showToast('Presiona de nuevo para salir');
+      const hashView = (typeof getViewFromHash === 'function') ? getViewFromHash() : null;
+      if (hashView && hashView !== 'cachimbo') {
+        switchView(hashView, true);
+      } else if (typeof state !== 'undefined' && state.currentView !== 'dashboard') {
+        switchView('dashboard', true);
+      } else {
+        // Re-push guard state so pressing back on home tab asks or stays
+        try {
+          history.pushState({ type: 'view', view: 'dashboard' }, '', (typeof VIEW_TO_HASH !== 'undefined' ? VIEW_TO_HASH.dashboard : '#/dashboard'));
+        } catch(e) {}
+        if (typeof showToast === 'function') {
+          showToast('Presiona de nuevo para salir');
+        }
       }
+    }
+  });
+
+  window.addEventListener('hashchange', function() {
+    if (typeof getViewFromHash !== 'function') return;
+    const v = getViewFromHash();
+    if (v === 'cachimbo') {
+      const cachimboScreen = document.getElementById('cachimboScreen');
+      if (!cachimboScreen || cachimboScreen.style.display === 'none' || cachimboScreen.style.display === '') {
+        if (typeof openCachimbo === 'function') openCachimbo(true);
+      }
+    } else if (v && typeof state !== 'undefined' && state.currentView !== v) {
+      switchView(v, true);
     }
   });
 })();
@@ -11284,7 +11947,9 @@ function openSuggestionsSheet() {
     <div class="sheet" style="max-width:480px;">
       <div class="sheet-handle"></div>
       <div class="sheet-title" style="align-items:flex-start;">
-        <div style="font-size:24px; margin-top:-2px;">💡</div>
+        <div style="color:var(--accent); margin-top:2px; display:flex; align-items:center;">
+          ${lucideSvg('lightbulb', 22)}
+        </div>
         <div style="display:flex; flex-direction:column; gap:2px;">
           <div>Buzón de Sugerencias</div>
           <div style="font-size:12px; color:var(--sub); font-weight:500;">Tu opinión nos ayuda a mejorar Promedia</div>
@@ -11298,11 +11963,11 @@ function openSuggestionsSheet() {
         
         <div class="field-label" style="font-size:12px; font-weight:700; color:var(--text); margin-bottom:6px;">Tipo de mensaje</div>
         <select id="suggCategory" class="field-input" style="width:100%; margin-bottom:12px; padding:10px; font-size:13px; border-radius:10px; background:var(--s2); color:var(--text); border:1px solid var(--border);">
-          <option value="idea">✨ Nueva idea o función</option>
-          <option value="cachimbo">🎮 Evento / minijuego para el Cachimbo</option>
-          <option value="malla">📚 Corrección de malla o curso</option>
-          <option value="bug">🐛 Reporte de error (Bug)</option>
-          <option value="otro">💬 Otro comentario</option>
+          <option value="idea">Nueva idea o función</option>
+          <option value="cachimbo">Evento / minijuego para el Cachimbo</option>
+          <option value="malla">Corrección de malla o curso</option>
+          <option value="bug">Reporte de error (Bug)</option>
+          <option value="otro">Otro comentario</option>
         </select>
         
         <div class="field-label" style="font-size:12px; font-weight:700; color:var(--text); margin-bottom:6px;">Tu mensaje</div>
@@ -11761,7 +12426,7 @@ async function handleSyllabusUpload(event) {
       });
       
       renderEditEvRows();
-      showToast('¡Sílabo escaneado con éxito! ✨', 'check');
+      showToast('¡Sílabo escaneado con éxito!', 'check');
     } else {
       showToast('No se detectaron evaluaciones en la imagen.', 'alert-triangle');
     }
@@ -11805,7 +12470,7 @@ async function handleScheduleUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  showToast('Analizando horario con IA... ⏳', 'loader');
+  showToast('Analizando horario con IA...', 'loader');
 
   try {
     const { base64, mimeType } = await readAndPrepareImageFile(file);
@@ -11842,7 +12507,7 @@ async function handleScheduleUpload(event) {
     }
 
     openScanHorarioModal(data, targetCycle);
-    showToast('¡Horario detectado con éxito! Revisa la vinculación ✨', 'check');
+    showToast('¡Horario detectado con éxito! Revisa la vinculación', 'check');
   } catch (err) {
     console.error('Error in handleScheduleUpload:', err);
     showToast(err.message || 'Error al analizar la imagen del horario.', 'x');
@@ -12011,7 +12676,7 @@ function renderScanHorarioList() {
       <div style="background:var(--s1); border:1px solid var(--border); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:8px;">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
           <div style="font-weight:700; font-size:13px; color:var(--text); display:flex; align-items:center; gap:6px;">
-            <span>📚 ${toSentenceCase(item.courseName)}</span>
+            <span>${toSentenceCase(item.courseName)}</span>
             ${item.section ? `<span style="font-size:10px; background:var(--s2); border:1px solid var(--border); padding:2px 6px; border-radius:6px; color:var(--sub); font-weight:600;">Secc. ${item.section}</span>` : ''}
           </div>
           <span style="font-size:11px; color:var(--muted);">${sessions.length} sesión(es)</span>
@@ -12025,10 +12690,10 @@ function renderScanHorarioList() {
           <label style="font-size:11px; color:var(--sub); font-weight:600;">Acción para este curso:</label>
           <select class="field-input" style="padding:7px 10px; font-size:12px;" onchange="scannedScheduleData.userMappings[${idx}] = this.value">
             ${cycleCourses.map(c => `
-              <option value="${c.id}" ${selectedAction === c.id ? 'selected' : ''}>🔗 Vincular a: ${c.name}</option>
+              <option value="${c.id}" ${selectedAction === c.id ? 'selected' : ''}>Vincular a: ${c.name}</option>
             `).join('')}
-            <option value="__NEW__" ${selectedAction === '__NEW__' ? 'selected' : ''}>➕ Crear nuevo curso en Ciclo ${targetCycle}</option>
-            <option value="__IGNORE__" ${selectedAction === '__IGNORE__' ? 'selected' : ''}>🚫 Omitir / No importar</option>
+            <option value="__NEW__" ${selectedAction === '__NEW__' ? 'selected' : ''}>Crear nuevo curso en Ciclo ${targetCycle}</option>
+            <option value="__IGNORE__" ${selectedAction === '__IGNORE__' ? 'selected' : ''}>Omitir / No importar</option>
           </select>
         </div>
       </div>
@@ -12106,7 +12771,7 @@ function applyScanSchedule() {
   renderHorario();
   closeSheet('scanHorarioModal');
 
-  const summaryMsg = `¡Horario aplicado! ${linkedCount > 0 ? `${linkedCount} vinculados` : ''}${linkedCount > 0 && createdCount > 0 ? ', ' : ''}${createdCount > 0 ? `${createdCount} creados` : ''} ✨`;
+  const summaryMsg = `¡Horario aplicado! ${linkedCount > 0 ? `${linkedCount} vinculados` : ''}${linkedCount > 0 && createdCount > 0 ? ', ' : ''}${createdCount > 0 ? `${createdCount} creados` : ''}`;
   showToast(summaryMsg, 'check');
   switchView('horario');
 }
@@ -12120,7 +12785,7 @@ function applyScanSchedule() {
     <img src="logo.png" alt="Promedia">
   </div>
   <div class="pwa-banner-content">
-    <div class="pwa-banner-title" id="pwaBannerTitle">📱 Instalar Promedia</div>
+    <div class="pwa-banner-title" id="pwaBannerTitle">Instalar Promedia</div>
     <div class="pwa-banner-sub" id="pwaBannerSub">Ábrela en pantalla completa y úsala sin conexión</div>
   </div>
   <div class="pwa-banner-actions">

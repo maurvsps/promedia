@@ -47,7 +47,9 @@ function startMinigame(mgType, choiceData) {
     const defaultTitle = choiceData.mgTitle || prevEvent.title || 'Desafío Cachimbo';
     const defaultDesc = choiceData.mgDesc || (choiceData.text ? `Opción elegida: "${choiceData.text}". Resuelve el reto antes de que se acabe el tiempo.` : 'Completa el minijuego para obtener el mejor resultado.');
 
-    if (mgEmojiEl) mgEmojiEl.textContent = defaultEmoji;
+    if (mgEmojiEl) {
+        mgEmojiEl.innerHTML = typeof getFluent3DEmoji === 'function' ? getFluent3DEmoji(defaultEmoji, 64) : defaultEmoji;
+    }
     if (mgTitleEl) mgTitleEl.textContent = typeof parseGenderText === 'function' ? parseGenderText(defaultTitle) : defaultTitle;
     if (mgDescEl) mgDescEl.textContent = typeof parseGenderText === 'function' ? parseGenderText(defaultDesc) : defaultDesc;
 
