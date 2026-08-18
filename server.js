@@ -48,6 +48,25 @@ async function generateWithFallback(ai, params) {
   throw lastError || new Error('No se pudo conectar con los modelos de IA.');
 }
 
+function formatErrorMessage(err) {
+  if (!err) return 'Error desconocido al procesar con IA.';
+  if (typeof err === 'string') {
+    try {
+      const parsed = JSON.parse(err);
+      if (parsed.error && parsed.error.message) return parsed.error.message;
+    } catch(e) {}
+    return err;
+  }
+  if (err.message) {
+    try {
+      const parsed = JSON.parse(err.message);
+      if (parsed.error && parsed.error.message) return parsed.error.message;
+    } catch(e) {}
+    return err.message;
+  }
+  return String(err);
+}
+
 function cleanJsonText(rawText) {
   if (!rawText) return '[]';
   let text = rawText.trim();
@@ -56,7 +75,15 @@ function cleanJsonText(rawText) {
   } else if (text.startsWith('```')) {
     text = text.replace(/^```\s*/i, '').replace(/\s*```$/, '');
   }
-  return text.trim();
+  text = text.trim();
+  if (!text.startsWith('[') && !text.startsWith('{')) {
+    const firstBracket = text.indexOf('[');
+    const lastBracket = text.lastIndexOf(']');
+    if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+      text = text.substring(firstBracket, lastBracket + 1);
+    }
+  }
+  return text;
 }
 
 function sanitizeImageMime(mimeType) {
@@ -409,7 +436,7 @@ app.post('/api/parse-syllabus', async (req, res) => {
     res.json(output);
   } catch (error) {
     console.error('Error in /api/parse-syllabus:', error);
-    res.status(500).json({ error: error.message || 'Error analizando el sílabo con IA.' });
+    res.status(500).json({ error: formatErrorMessage(error) || 'Error analizando el sílabo con IA.' });
   }
 });
 
@@ -489,7 +516,7 @@ Devuelve el listado estructurado de cursos detectados.`;
     res.json(output);
   } catch (error) {
     console.error('Error in /api/parse-schedule:', error);
-    res.status(500).json({ error: error.message || 'Error analizando el horario con IA.' });
+    res.status(500).json({ error: formatErrorMessage(error) || 'Error analizando el horario con IA.' });
   }
 });
 
@@ -539,7 +566,7 @@ Devuelve la lista con todos los usuarios encontrados.`;
     res.json(output);
   } catch (error) {
     console.error('Error in /api/parse-auth-table:', error);
-    res.status(500).json({ error: error.message || 'Error analizando la captura de Firebase con IA.' });
+    res.status(500).json({ error: formatErrorMessage(error) || 'Error analizando la captura de Firebase con IA.' });
   }
 });
 

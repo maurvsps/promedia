@@ -10256,9 +10256,18 @@ window.handleAuthTableImageUpload = async function(event) {
       })
     });
 
-    const parsedItems = await response.json();
+    const contentType = response.headers.get('content-type') || '';
+    let parsedItems;
+    if (contentType.includes('application/json')) {
+      parsedItems = await response.json();
+    } else {
+      await response.text();
+      throw new Error(`El servidor respondió con un error (${response.status}). Intenta nuevamente.`);
+    }
+
     if (!response.ok || !Array.isArray(parsedItems)) {
-      throw new Error(parsedItems.error || 'No se pudieron extraer datos de la imagen');
+      const errMsg = parsedItems && parsedItems.error ? parsedItems.error : 'No se pudieron extraer datos de la imagen';
+      throw new Error(errMsg);
     }
 
     if (parsedItems.length === 0) {
@@ -10269,9 +10278,19 @@ window.handleAuthTableImageUpload = async function(event) {
       statusEl.textContent = `IA detectó ${parsedItems.length} usuarios. Vinculando en Firestore... 💾`;
     }
 
+    // Ensure we have current users data
+    if ((!_adminUsersData || _adminUsersData.length === 0) && window._fbGetDocs && window._fbCollection && window._fbDb) {
+      try {
+        const snap = await window._fbGetDocs(window._fbCollection(window._fbDb, 'users'));
+        _adminUsersData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      } catch(e) {
+        console.warn('Could not refresh users from Firestore before sync:', e);
+      }
+    }
+
     // Match with known users
     let matchedCount = 0;
-    const knownUids = _adminUsersData.map(u => u.id);
+    const knownUids = (_adminUsersData || []).map(u => u.id);
 
     for (const item of parsedItems) {
       let email = (item.email || '').trim();
@@ -11488,9 +11507,17 @@ async function handleSyllabusUpload(event) {
       })
     });
     
-    const result = await response.json();
+    const contentType = response.headers.get('content-type') || '';
+    let result;
+    if (contentType.includes('application/json')) {
+      result = await response.json();
+    } else {
+      await response.text();
+      throw new Error(`El servidor respondió con un error (${response.status}). Intenta nuevamente.`);
+    }
+
     if (!response.ok) {
-      throw new Error(result.error || 'Error al analizar el sílabo');
+      throw new Error((result && result.error) || 'Error al analizar el sílabo');
     }
     
     const evals = result;
@@ -11602,9 +11629,17 @@ async function handleScheduleUpload(event) {
       })
     });
 
-    const result = await response.json();
+    const contentType = response.headers.get('content-type') || '';
+    let result;
+    if (contentType.includes('application/json')) {
+      result = await response.json();
+    } else {
+      await response.text();
+      throw new Error(`El servidor respondió con un error (${response.status}). Intenta nuevamente.`);
+    }
+
     if (!response.ok) {
-      throw new Error(result.error || 'Error al conectar con la IA');
+      throw new Error((result && result.error) || 'Error al conectar con la IA');
     }
 
     const data = result;
