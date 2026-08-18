@@ -10,7 +10,17 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
-app.use(express.static(__dirname));
+// CORS & Preflight middleware
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -570,8 +580,28 @@ Devuelve la lista con todos los usuarios encontrados.`;
   }
 });
 
+app.get('/api/parse-auth-table', (req, res) => {
+  res.json({ status: 'active', endpoint: '/api/parse-auth-table', method: 'POST' });
+});
+
+app.get('/api/parse-syllabus', (req, res) => {
+  res.json({ status: 'active', endpoint: '/api/parse-syllabus', method: 'POST' });
+});
+
+app.get('/api/parse-schedule', (req, res) => {
+  res.json({ status: 'active', endpoint: '/api/parse-schedule', method: 'POST' });
+});
+
+// Serve static files
+app.use(express.static(__dirname));
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Generic JSON 404 handler for unmatched /api routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ error: `Ruta de API no encontrada: ${req.originalUrl}` });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
