@@ -9810,6 +9810,43 @@ window.closeCachimbo = function(skipHistory) {
 // ════════════════════════════════════════════════
 let adminCurrentTab = 'stats';
 let _adminUsersData = [];
+let _adminUsersCurrentPage = 1;
+const _adminUsersPageSize = 25;
+let _adminUsersSortBy = 'date_desc';
+let _adminUsersSearchQuery = '';
+
+function getAdminUserTimestamp(u) {
+  if (u.lastLogin) {
+    const t = new Date(u.lastLogin).getTime();
+    if (!isNaN(t)) return t;
+  }
+  if (u.updatedAt) {
+    const t = new Date(u.updatedAt).getTime();
+    if (!isNaN(t)) return t;
+  }
+  if (u.createdAt) {
+    const t = new Date(u.createdAt).getTime();
+    if (!isNaN(t)) return t;
+  }
+  return 0;
+}
+
+function getAdminUserName(u) {
+  const stateObj = u.state || {};
+  return (u.displayName || (u.email ? u.email.split('@')[0] : (stateObj.name || ('Usuario (' + (u.id ? u.id.slice(0,6) : 'N/A') + ')')))).trim();
+}
+
+function getAdminUserCareer(u) {
+  const stateObj = u.state || {};
+  let car = u.career || stateObj.career || 'Sin configurar';
+  if (typeof MALLAS !== 'undefined' && MALLAS[car] && MALLAS[car].label) car = MALLAS[car].label;
+  return car;
+}
+
+function getAdminUserCycles(u) {
+  const stateObj = u.state || {};
+  return u.cyclesCount || (stateObj.cycles ? Object.keys(stateObj.cycles).length : 0);
+}
 
 window.openAdminSheet = function(tab = 'stats') {
   openSheet('adminSheet');
@@ -9875,14 +9912,13 @@ window.renderAdminStats = async function() {
 
     users.forEach(u => {
       const stateObj = u.state || {};
-      const last = u.lastLogin ? new Date(u.lastLogin).getTime() : (u.updatedAt ? new Date(u.updatedAt).getTime() : 0);
+      const last = getAdminUserTimestamp(u);
       if (last > 0 && (now - last <= oneDay)) activeToday++;
       if (last > 0 && (now - last <= sevenDays)) activeWeek++;
 
       if ((u.simGame && u.simGame.name) || (stateObj.simGame && stateObj.simGame.name)) cachimboPlayers++;
 
-      let car = u.career || stateObj.career || 'Sin configurar';
-      if (typeof MALLAS !== 'undefined' && MALLAS[car] && MALLAS[car].label) car = MALLAS[car].label;
+      let car = getAdminUserCareer(u);
       careerMap[car] = (careerMap[car] || 0) + 1;
     });
 
@@ -9940,59 +9976,63 @@ window.renderAdminStats = async function() {
         </div>
       </div>
 
-      <!-- Lista de Usuarios Registrados -->
+      <!-- Lista de Usuarios Registrados con Paginación y Filtros -->
       <div style="background:var(--s1); border:1px solid var(--border2); border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:12px;">
+        <!-- Header de sección -->
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
           <div style="font-size:13px; font-weight:900; color:var(--text); display:flex; align-items:center; gap:8px;">
-            <span>📋 Directorio de Usuarios (${users.length})</span>
+            <span>📋 Directorio de Usuarios</span>
+            <span id="adminUsersCountBadge" style="font-size:11px; background:var(--s2); border:1px solid var(--border2); color:var(--accent); padding:2px 8px; border-radius:12px; font-weight:800;">${users.length}</span>
             <button onclick="openAdminSyncModal()" class="btn btn-accent" style="padding:4px 10px; font-size:11px; font-weight:800; border-radius:8px; display:inline-flex; align-items:center; gap:4px;">
               ⚡ Vincular Correos
             </button>
           </div>
-          <input type="text" id="adminUserSearchInput" placeholder="Buscar por correo o nombre..." oninput="filterAdminUsersTable()" style="padding:6px 12px; font-size:11.5px; border-radius:8px; background:var(--bg); border:1px solid var(--border2); color:var(--text); outline:none; min-width:160px;">
         </div>
 
-        <div id="adminUsersTableCtn" style="display:flex; flex-direction:column; gap:8px;">
-    `;
-
-    users.forEach((u) => {
-      const stateObj = u.state || {};
-      const name = u.displayName || (u.email ? u.email.split('@')[0] : (stateObj.name || ('Usuario (' + u.id.slice(0,6) + ')')));
-      const email = u.email || 'Doc ID: ' + u.id.slice(0,10) + '...';
-      const initial = name.charAt(0).toUpperCase();
-      let car = u.career || stateObj.career || 'Sin configurar';
-      if (typeof MALLAS !== 'undefined' && MALLAS[car] && MALLAS[car].label) car = MALLAS[car].label;
-      const lastStr = u.lastLogin ? new Date(u.lastLogin).toLocaleDateString('es-PE', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : (u.updatedAt ? new Date(u.updatedAt).toLocaleDateString('es-PE', { month:'short', day:'numeric' }) : 'Registrado');
-      const cycles = u.cyclesCount || (stateObj.cycles ? Object.keys(stateObj.cycles).length : 0);
-
-      html += `
-        <div class="admin-user-row" data-search="${(name + ' ' + email + ' ' + car).toLowerCase()}" style="background:var(--bg); border:1px solid var(--border2); border-radius:12px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-          <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:180px;">
-            <div style="width:34px; height:34px; border-radius:50%; background:var(--s2); border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; color:var(--accent); flex-shrink:0;">
-              ${initial}
+        <!-- Barra Unificada: Buscador, Ordenación y Paginador PINEADO a la derecha en la misma fila -->
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; background:var(--bg); border:1px solid var(--border2); border-radius:12px; padding:8px 10px;">
+          
+          <!-- Controles Izquierda/Centro: Buscador y Filtro de Ordenación -->
+          <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:230px; flex-wrap:wrap;">
+            <!-- Buscador -->
+            <div style="position:relative; flex:1; min-width:140px;">
+              <span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:11px; opacity:0.5; pointer-events:none;">🔍</span>
+              <input type="text" id="adminUserSearchInput" value="${_adminUsersSearchQuery}" placeholder="Buscar correo, nombre o UID..." oninput="handleAdminUserSearch(this.value)" style="width:100%; box-sizing:border-box; padding:5px 8px 5px 26px; font-size:11.5px; border-radius:8px; background:var(--s1); border:1px solid var(--border2); color:var(--text); outline:none;">
             </div>
-            <div style="overflow:hidden;">
-              <div style="font-size:12.5px; font-weight:800; color:var(--text); text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${name}</div>
-              <div style="font-size:10.5px; color:var(--sub); text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${email}</div>
+
+            <!-- Filtro para ordenar -->
+            <div style="display:flex; align-items:center; gap:4px;">
+              <span style="font-size:10.5px; font-weight:800; color:var(--muted); text-transform:uppercase; white-space:nowrap;">Ordenar:</span>
+              <select id="adminUserSortSelect" onchange="handleAdminUserSortChange(this.value)" style="padding:5px 8px; font-size:11px; font-weight:700; border-radius:8px; background:var(--s1); border:1px solid var(--border2); color:var(--text); outline:none; cursor:pointer;">
+                <option value="date_desc" ${_adminUsersSortBy === 'date_desc' ? 'selected' : ''}>🕒 Más recientes</option>
+                <option value="date_asc" ${_adminUsersSortBy === 'date_asc' ? 'selected' : ''}>🕒 Más antiguos</option>
+                <option value="name_asc" ${_adminUsersSortBy === 'name_asc' ? 'selected' : ''}>🔤 Nombre (A-Z)</option>
+                <option value="name_desc" ${_adminUsersSortBy === 'name_desc' ? 'selected' : ''}>🔤 Nombre (Z-A)</option>
+                <option value="email_asc" ${_adminUsersSortBy === 'email_asc' ? 'selected' : ''}>📧 Correo (A-Z)</option>
+                <option value="career_asc" ${_adminUsersSortBy === 'career_asc' ? 'selected' : ''}>🎓 Carrera (A-Z)</option>
+                <option value="cycles_desc" ${_adminUsersSortBy === 'cycles_desc' ? 'selected' : ''}>📚 Mayor cant. ciclos</option>
+                <option value="cachimbo_desc" ${_adminUsersSortBy === 'cachimbo_desc' ? 'selected' : ''}>🎮 Cachimbo activos</option>
+              </select>
             </div>
           </div>
 
-          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            <span style="font-size:10px; background:var(--s2); border:1px solid var(--border2); color:var(--sub); padding:3px 8px; border-radius:6px; font-weight:700;">${car}</span>
-            <span style="font-size:10px; background:rgba(99,102,241,0.1); color:var(--accent); padding:3px 8px; border-radius:6px; font-weight:800;">${cycles} ciclos</span>
-            <span style="font-size:10px; color:var(--muted); font-weight:600;">🕒 ${lastStr}</span>
-            <button onclick="openAdminUserModal('${u.id}')" style="background:var(--s2); border:1px solid var(--border2); color:var(--text); border-radius:6px; padding:4px 8px; font-size:11px; font-weight:800; cursor:pointer;">👁️ Detalle</button>
+          <!-- Paginador Pineado a la Derecha (En la misma fila) -->
+          <div style="display:flex; align-items:center; gap:6px; margin-left:auto; flex-shrink:0; background:var(--s1); border:1px solid var(--border2); padding:3px 8px; border-radius:8px;">
+            <span id="adminUserPaginationLabel" style="font-size:11px; font-weight:800; color:var(--sub); white-space:nowrap;">Cargando...</span>
+            <div style="display:flex; align-items:center; gap:3px;">
+              <button id="adminUserPrevBtn" onclick="changeAdminUsersPage(-1)" title="Página anterior" style="width:24px; height:24px; border-radius:6px; border:1px solid var(--border2); background:var(--bg); color:var(--text); font-size:10px; font-weight:900; display:flex; align-items:center; justify-content:center; cursor:pointer; user-select:none;">◀</button>
+              <button id="adminUserNextBtn" onclick="changeAdminUsersPage(1)" title="Página siguiente" style="width:24px; height:24px; border-radius:6px; border:1px solid var(--border2); background:var(--bg); color:var(--text); font-size:10px; font-weight:900; display:flex; align-items:center; justify-content:center; cursor:pointer; user-select:none;">▶</button>
+            </div>
           </div>
         </div>
-      `;
-    });
 
-    html += `
-        </div>
+        <!-- Contenedor dinámico de filas (Máximo 25 por página) -->
+        <div id="adminUsersTableCtn" style="display:flex; flex-direction:column; gap:8px;"></div>
       </div>
     `;
 
     ctn.innerHTML = html;
+    renderAdminUsersTableRows();
   } catch(e) {
     console.warn('Error loading admin stats:', e);
     ctn.innerHTML = `
@@ -10006,17 +10046,170 @@ window.renderAdminStats = async function() {
   }
 };
 
+window.handleAdminUserSearch = function(val) {
+  _adminUsersSearchQuery = (val || '').toLowerCase().trim();
+  _adminUsersCurrentPage = 1;
+  renderAdminUsersTableRows();
+};
+
+window.handleAdminUserSortChange = function(val) {
+  _adminUsersSortBy = val || 'date_desc';
+  _adminUsersCurrentPage = 1;
+  renderAdminUsersTableRows();
+};
+
+window.changeAdminUsersPage = function(delta) {
+  _adminUsersCurrentPage += delta;
+  renderAdminUsersTableRows();
+};
+
 window.filterAdminUsersTable = function() {
-  const q = (document.getElementById('adminUserSearchInput')?.value || '').toLowerCase().trim();
-  const rows = document.querySelectorAll('.admin-user-row');
-  rows.forEach(r => {
-    const txt = r.getAttribute('data-search') || '';
-    if (!q || txt.includes(q)) {
-      r.style.display = 'flex';
-    } else {
-      r.style.display = 'none';
+  const inp = document.getElementById('adminUserSearchInput');
+  handleAdminUserSearch(inp ? inp.value : '');
+};
+
+window.renderAdminUsersTableRows = function() {
+  const ctn = document.getElementById('adminUsersTableCtn');
+  const pagLabel = document.getElementById('adminUserPaginationLabel');
+  const prevBtn = document.getElementById('adminUserPrevBtn');
+  const nextBtn = document.getElementById('adminUserNextBtn');
+  const badge = document.getElementById('adminUsersCountBadge');
+  if (!ctn) return;
+
+  const q = _adminUsersSearchQuery;
+  let filtered = (_adminUsersData || []).filter(u => {
+    if (!q) return true;
+    const name = getAdminUserName(u).toLowerCase();
+    const email = (u.email || '').toLowerCase();
+    const car = getAdminUserCareer(u).toLowerCase();
+    const uid = (u.id || '').toLowerCase();
+    return name.includes(q) || email.includes(q) || car.includes(q) || uid.includes(q);
+  });
+
+  // Ordenación
+  filtered.sort((a, b) => {
+    switch (_adminUsersSortBy) {
+      case 'date_asc':
+        return getAdminUserTimestamp(a) - getAdminUserTimestamp(b);
+      case 'name_asc':
+        return getAdminUserName(a).localeCompare(getAdminUserName(b));
+      case 'name_desc':
+        return getAdminUserName(b).localeCompare(getAdminUserName(a));
+      case 'email_asc':
+        return (a.email || '').localeCompare(b.email || '');
+      case 'career_asc':
+        return getAdminUserCareer(a).localeCompare(getAdminUserCareer(b));
+      case 'cycles_desc':
+        return getAdminUserCycles(b) - getAdminUserCycles(a);
+      case 'cachimbo_desc': {
+        const aHasSim = !!(a.simGame?.name || a.state?.simGame?.name);
+        const bHasSim = !!(b.simGame?.name || b.state?.simGame?.name);
+        if (aHasSim && !bHasSim) return -1;
+        if (!aHasSim && bHasSim) return 1;
+        return getAdminUserTimestamp(b) - getAdminUserTimestamp(a);
+      }
+      case 'date_desc':
+      default:
+        return getAdminUserTimestamp(b) - getAdminUserTimestamp(a);
     }
   });
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / _adminUsersPageSize));
+
+  if (_adminUsersCurrentPage > totalPages) _adminUsersCurrentPage = totalPages;
+  if (_adminUsersCurrentPage < 1) _adminUsersCurrentPage = 1;
+
+  const startIndex = total > 0 ? (_adminUsersCurrentPage - 1) * _adminUsersPageSize : 0;
+  const endIndex = total > 0 ? Math.min(startIndex + _adminUsersPageSize, total) : 0;
+  const pageItems = filtered.slice(startIndex, endIndex);
+
+  // Actualizar indicador de paginación
+  if (pagLabel) {
+    if (total === 0) {
+      pagLabel.textContent = '0 de 0';
+    } else {
+      pagLabel.textContent = `Mostrando ${startIndex + 1}-${endIndex} de ${total}`;
+    }
+  }
+
+  // Actualizar badge de total
+  if (badge) {
+    badge.textContent = q ? `${total} de ${_adminUsersData.length}` : `${_adminUsersData.length}`;
+  }
+
+  // Actualizar estados de botones de página
+  if (prevBtn) {
+    const disabled = _adminUsersCurrentPage <= 1;
+    prevBtn.disabled = disabled;
+    prevBtn.style.opacity = disabled ? '0.35' : '1';
+    prevBtn.style.cursor = disabled ? 'not-allowed' : 'pointer';
+  }
+  if (nextBtn) {
+    const disabled = _adminUsersCurrentPage >= totalPages;
+    nextBtn.disabled = disabled;
+    nextBtn.style.opacity = disabled ? '0.35' : '1';
+    nextBtn.style.cursor = disabled ? 'not-allowed' : 'pointer';
+  }
+
+  // Renderizar filas
+  if (pageItems.length === 0) {
+    ctn.innerHTML = `
+      <div style="text-align:center; padding:32px 16px; background:var(--bg); border:1px solid var(--border2); border-radius:12px; color:var(--muted);">
+        <div style="font-size:24px; margin-bottom:6px;">🔍</div>
+        <div style="font-size:12.5px; font-weight:800; color:var(--text);">No se encontraron usuarios</div>
+        <div style="font-size:11px; margin-top:2px;">Prueba ajustando el término de búsqueda o cambiando el filtro de ordenación.</div>
+      </div>
+    `;
+    return;
+  }
+
+  let rowsHtml = '';
+  pageItems.forEach((u, idx) => {
+    const stateObj = u.state || {};
+    const name = getAdminUserName(u);
+    const hasLinkedEmail = !!(u.email && u.email.includes('@'));
+    const email = u.email || ('Doc ID: ' + (u.id ? u.id.slice(0, 10) : '...') + '...');
+    const initial = (name.charAt(0) || 'U').toUpperCase();
+    const car = getAdminUserCareer(u);
+    const cycles = getAdminUserCycles(u);
+    
+    const lastTimestamp = getAdminUserTimestamp(u);
+    const lastStr = lastTimestamp > 0 
+      ? new Date(lastTimestamp).toLocaleDateString('es-PE', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })
+      : 'Registrado';
+
+    const globalIndex = startIndex + idx + 1;
+
+    rowsHtml += `
+      <div class="admin-user-row" style="background:var(--bg); border:1px solid var(--border2); border-radius:12px; padding:9px 12px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; transition:border-color 0.15s ease;">
+        <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:180px;">
+          <div style="font-size:10px; font-weight:900; color:var(--muted); width:18px; text-align:right; flex-shrink:0;">#${globalIndex}</div>
+          <div style="width:34px; height:34px; border-radius:50%; background:var(--s2); border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:13px; color:var(--accent); flex-shrink:0;">
+            ${initial}
+          </div>
+          <div style="overflow:hidden; flex:1;">
+            <div style="font-size:12.5px; font-weight:800; color:var(--text); text-overflow:ellipsis; overflow:hidden; white-space:nowrap; display:flex; align-items:center; gap:6px;">
+              <span>${name}</span>
+              ${hasLinkedEmail ? '<span style="font-size:9.5px; color:var(--green); background:rgba(16,185,129,0.12); padding:1px 5px; border-radius:4px; font-weight:800;">✓ Vinculado</span>' : ''}
+            </div>
+            <div style="font-size:10.5px; color:var(--sub); text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${email}</div>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+          <span style="font-size:10px; background:var(--s2); border:1px solid var(--border2); color:var(--sub); padding:3px 7px; border-radius:6px; font-weight:700; max-width:130px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="${car}">${car}</span>
+          <span style="font-size:10px; background:rgba(99,102,241,0.1); color:var(--accent); padding:3px 7px; border-radius:6px; font-weight:800;">${cycles} ciclos</span>
+          <span style="font-size:10px; color:var(--muted); font-weight:600;">🕒 ${lastStr}</span>
+          <button onclick="openAdminUserModal('${u.id}')" style="background:var(--s2); border:1px solid var(--border2); color:var(--text); border-radius:6px; padding:4px 8px; font-size:11px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:3px;">
+            <span>👁️ Detalle</span>
+          </button>
+        </div>
+      </div>
+    `;
+  });
+
+  ctn.innerHTML = rowsHtml;
 };
 
 window.openAdminSyncModal = function() {
