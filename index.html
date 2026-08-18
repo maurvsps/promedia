@@ -1864,6 +1864,254 @@ input[type="time"]::-webkit-calendar-picker-indicator { display: none; -webkit-a
 input[type="time"] { color-scheme: dark; } /* Base native dark scheme for the popover */
 :root[data-theme="light"] input[type="time"] { color-scheme: light; }
 
+/* ════════════════════════════════════════════════
+   PROMEDIA CUSTOM DROPDOWN COMPONENT
+════════════════════════════════════════════════ */
+.pm-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+/* Hide native select visually but keep it fully accessible in DOM & JS tree */
+.pm-dropdown-native-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
+/* Custom Dropdown Trigger Button */
+.pm-dropdown-trigger {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--s3);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 10px 13px;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, transform 0.1s ease;
+  text-align: left;
+}
+
+.pm-dropdown-trigger:hover {
+  border-color: var(--border2);
+  background: var(--s2);
+}
+
+.pm-dropdown-trigger:focus,
+.pm-dropdown-trigger.pm-active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(245, 106, 36, 0.18);
+  background: var(--s2);
+}
+
+.pm-dropdown-trigger.pm-active .pm-dropdown-chevron {
+  transform: rotate(180deg);
+  color: var(--accent);
+}
+
+.pm-dropdown-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.pm-dropdown-placeholder {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.pm-dropdown-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--sub);
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.18s ease;
+}
+
+.pm-dropdown-chevron svg {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+}
+
+.pm-dropdown-trigger.pm-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Floating Dropdown Menu (Portaled directly to <body> for zero clipping and perfect z-index) */
+.pm-dropdown-portal {
+  position: fixed;
+  z-index: 9999999;
+  background: var(--s1);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.45), 0 8px 16px -4px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  opacity: 0;
+  transform: scale(0.96) translateY(-4px);
+  transform-origin: top center;
+  transition: opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1), transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  max-width: calc(100vw - 16px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.pm-dropdown-portal.pm-open-up {
+  transform-origin: bottom center;
+  transform: scale(0.96) translateY(4px);
+}
+
+.pm-dropdown-portal.pm-visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  pointer-events: auto;
+}
+
+/* Search input inside dropdown when options >= 8 */
+.pm-dropdown-search-ctn {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border2);
+  background: var(--bg);
+}
+
+.pm-dropdown-search-inp {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--s2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.pm-dropdown-search-inp:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(245, 106, 36, 0.15);
+}
+
+/* Options List Container */
+.pm-dropdown-list {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-sizing: border-box;
+}
+
+/* Custom Scrollbar for list */
+.pm-dropdown-list::-webkit-scrollbar {
+  width: 6px;
+}
+.pm-dropdown-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pm-dropdown-list::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 4px;
+}
+.pm-dropdown-list::-webkit-scrollbar-thumb:hover {
+  background: var(--sub);
+}
+
+/* Single Option Item */
+.pm-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s ease, color 0.12s ease;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.pm-dropdown-item:hover,
+.pm-dropdown-item.pm-highlighted {
+  background: rgba(245, 106, 36, 0.16);
+  color: var(--accent);
+}
+
+.pm-dropdown-item.pm-selected {
+  background: rgba(245, 106, 36, 0.18);
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.pm-dropdown-item.pm-selected.pm-highlighted {
+  background: rgba(245, 106, 36, 0.28);
+}
+
+.pm-dropdown-item.pm-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.pm-dropdown-item.pm-placeholder-item {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.pm-dropdown-item-check {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.pm-dropdown-empty {
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--sub);
+  text-align: center;
+}
 </style>
 <link rel="manifest" href="/manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2788,6 +3036,638 @@ yxj6RF8XOvdnKW7bDXILueOe...,luismaquiroz2026@gmail.com" style="width:100%; box-s
 <script src="cachimbo_events.js"></script>
 <script src="cachimbo_minigames.js"></script>
 <script>
+// ════════════════════════════════════════════════
+//  UNIVERSAL CUSTOM DROPDOWN COMPONENT (PromediaDropdown)
+// ════════════════════════════════════════════════
+const PromediaDropdown = (function() {
+  let activeInstance = null;
+  let portalEl = null;
+  let typeaheadBuffer = '';
+  let typeaheadTimer = null;
+
+  function pmEscape(str) {
+    if (str === undefined || str === null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function handleTypeahead(char, selectEl, onFound) {
+    clearTimeout(typeaheadTimer);
+    typeaheadBuffer += char.toLowerCase();
+    typeaheadTimer = setTimeout(() => { typeaheadBuffer = ''; }, 650);
+
+    const options = Array.from(selectEl.options);
+    const foundIdx = options.findIndex(opt => {
+      if (opt.disabled || (opt.value === '' && opt.disabled)) return false;
+      const txt = (opt.textContent || opt.innerText || '').trim().toLowerCase();
+      return txt.startsWith(typeaheadBuffer);
+    });
+
+    if (foundIdx !== -1 && typeof onFound === 'function') {
+      onFound(foundIdx);
+    }
+  }
+
+  function ensurePortal() {
+    if (!portalEl) {
+      portalEl = document.createElement('div');
+      portalEl.className = 'pm-dropdown-portal';
+      portalEl.id = 'pmGlobalDropdownPortal';
+      portalEl.setAttribute('role', 'listbox');
+      document.body.appendChild(portalEl);
+
+      // Close when clicking outside
+      document.addEventListener('pointerdown', function(e) {
+        if (!activeInstance) return;
+        const trigger = activeInstance.triggerEl;
+        if (portalEl.contains(e.target) || (trigger && trigger.contains(e.target))) {
+          return;
+        }
+        closeActive();
+      }, true);
+
+      // Reposition on window resize / scroll
+      window.addEventListener('resize', function() {
+        if (activeInstance) activeInstance.updatePosition();
+      }, { passive: true });
+
+      window.addEventListener('scroll', function(e) {
+        if (activeInstance) {
+          if (!portalEl.contains(e.target)) {
+            activeInstance.updatePosition();
+          }
+        }
+      }, { passive: true, capture: true });
+
+      // Global keyboard handler for when menu is open
+      document.addEventListener('keydown', function(e) {
+        if (!activeInstance || !activeInstance.isOpen) return;
+
+        const isSearchFocused = document.activeElement && document.activeElement.classList.contains('pm-dropdown-search-inp');
+
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          const tr = activeInstance.triggerEl;
+          closeActive();
+          if (tr) tr.focus();
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          activeInstance.navigateOptions(1);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          activeInstance.navigateOptions(-1);
+        } else if (e.key === 'Home' && !isSearchFocused) {
+          e.preventDefault();
+          activeInstance.navigateOptions('first');
+        } else if (e.key === 'End' && !isSearchFocused) {
+          e.preventDefault();
+          activeInstance.navigateOptions('last');
+        } else if (e.key === 'PageDown') {
+          e.preventDefault();
+          activeInstance.navigateOptions(5);
+        } else if (e.key === 'PageUp') {
+          e.preventDefault();
+          activeInstance.navigateOptions(-5);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          activeInstance.selectHighlighted();
+        } else if (e.key === ' ' && !isSearchFocused) {
+          e.preventDefault();
+          activeInstance.selectHighlighted();
+        } else if (e.key === 'Tab') {
+          closeActive();
+        } else if (!isSearchFocused && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          // Typeahead while open (when not focused in search box)
+          handleTypeahead(e.key, activeInstance.selectEl, (idx) => {
+            activeInstance.highlightIndex(idx);
+          });
+        }
+      });
+    }
+    return portalEl;
+  }
+
+  function closeActive() {
+    if (activeInstance) {
+      activeInstance.close();
+      activeInstance = null;
+    }
+  }
+
+  class DropdownInstance {
+    constructor(selectEl) {
+      this.selectEl = selectEl;
+      this.isOpen = false;
+      this.highlightedIndex = -1;
+      this.searchQuery = '';
+      this.initDOM();
+      this.bindEvents();
+      this.syncFromNative();
+      this.observeNative();
+    }
+
+    initDOM() {
+      // Check if already has wrapper
+      let wrapper = this.selectEl.parentElement;
+      if (!wrapper || !wrapper.classList.contains('pm-dropdown-wrapper')) {
+        wrapper = document.createElement('div');
+        wrapper.className = 'pm-dropdown-wrapper';
+        this.selectEl.parentNode.insertBefore(wrapper, this.selectEl);
+        wrapper.appendChild(this.selectEl);
+      }
+      this.wrapperEl = wrapper;
+
+      // Copy layout styles from select to wrapper
+      const computed = window.getComputedStyle(this.selectEl);
+      const inlineStyle = this.selectEl.getAttribute('style') || '';
+      
+      if (inlineStyle.includes('flex:') || computed.flexGrow !== '0' || computed.flexBasis !== 'auto') {
+        this.wrapperEl.style.flex = this.selectEl.style.flex || computed.flex;
+      }
+      if (this.selectEl.style.minWidth) this.wrapperEl.style.minWidth = this.selectEl.style.minWidth;
+      if (this.selectEl.style.maxWidth) this.wrapperEl.style.maxWidth = this.selectEl.style.maxWidth;
+      if (this.selectEl.style.width) this.wrapperEl.style.width = this.selectEl.style.width;
+      if (this.selectEl.style.marginBottom) this.wrapperEl.style.marginBottom = this.selectEl.style.marginBottom;
+      if (this.selectEl.style.marginTop) this.wrapperEl.style.marginTop = this.selectEl.style.marginTop;
+
+      // Hide native select visually
+      this.selectEl.classList.add('pm-dropdown-native-hidden');
+      this.selectEl.setAttribute('tabindex', '-1');
+      this.selectEl.setAttribute('aria-hidden', 'true');
+
+      // Create or get custom trigger
+      let trigger = this.wrapperEl.querySelector('.pm-dropdown-trigger');
+      if (!trigger) {
+        trigger = document.createElement('button');
+        trigger.type = 'button';
+        trigger.className = 'pm-dropdown-trigger';
+        trigger.setAttribute('role', 'combobox');
+        trigger.setAttribute('aria-haspopup', 'listbox');
+        trigger.setAttribute('aria-expanded', 'false');
+
+        if (this.selectEl.classList.contains('field-input')) {
+          trigger.classList.add('pm-field-input');
+        }
+        if (this.selectEl.id) {
+          trigger.setAttribute('data-select-id', this.selectEl.id);
+        }
+        if (this.selectEl.style.padding) {
+          trigger.style.padding = this.selectEl.style.padding;
+        }
+        if (this.selectEl.style.fontSize) {
+          trigger.style.fontSize = this.selectEl.style.fontSize;
+        }
+        if (this.selectEl.style.borderRadius) {
+          trigger.style.borderRadius = this.selectEl.style.borderRadius;
+        }
+        trigger.innerHTML = `
+          <span class="pm-dropdown-label"></span>
+          <span class="pm-dropdown-chevron">
+            <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+          </span>
+        `;
+        this.wrapperEl.appendChild(trigger);
+      }
+      this.triggerEl = trigger;
+      this.labelEl = trigger.querySelector('.pm-dropdown-label');
+    }
+
+    bindEvents() {
+      this.triggerEl.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.selectEl.disabled) return;
+        this.toggle();
+      });
+
+      this.triggerEl.addEventListener('keydown', (e) => {
+        if (this.selectEl.disabled) return;
+
+        // When closed, trigger keys
+        if (!this.isOpen) {
+          if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowDown' || e.key === 'ArrowUp' || (e.altKey && e.key === 'ArrowDown')) {
+            e.preventDefault();
+            this.open();
+          } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            // Typeahead selection while closed
+            handleTypeahead(e.key, this.selectEl, (idx) => {
+              this.selectIndex(idx, false);
+            });
+          }
+        }
+      });
+
+      this.selectEl.addEventListener('change', () => {
+        this.syncFromNative();
+      });
+    }
+
+    observeNative() {
+      this.observer = new MutationObserver(() => {
+        this.syncFromNative();
+        if (this.isOpen) {
+          this.renderPortalContent();
+        }
+      });
+      this.observer.observe(this.selectEl, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['disabled', 'class', 'style', 'value']
+      });
+
+      if (!this.selectEl._pmHooked) {
+        this.selectEl._pmHooked = true;
+        const self = this;
+        const proto = HTMLSelectElement.prototype;
+        const valDesc = Object.getOwnPropertyDescriptor(proto, 'value');
+        const selIdxDesc = Object.getOwnPropertyDescriptor(proto, 'selectedIndex');
+
+        if (valDesc && valDesc.set) {
+          Object.defineProperty(this.selectEl, 'value', {
+            get() { return valDesc.get.call(this); },
+            set(v) {
+              valDesc.set.call(this, v);
+              self.syncFromNative();
+            }
+          });
+        }
+
+        if (selIdxDesc && selIdxDesc.set) {
+          Object.defineProperty(this.selectEl, 'selectedIndex', {
+            get() { return selIdxDesc.get.call(this); },
+            set(idx) {
+              selIdxDesc.set.call(this, idx);
+              self.syncFromNative();
+            }
+          });
+        }
+      }
+    }
+
+    syncFromNative() {
+      if (this.selectEl.disabled) {
+        this.triggerEl.classList.add('pm-disabled');
+        this.triggerEl.disabled = true;
+        this.triggerEl.setAttribute('aria-disabled', 'true');
+      } else {
+        this.triggerEl.classList.remove('pm-disabled');
+        this.triggerEl.disabled = false;
+        this.triggerEl.removeAttribute('aria-disabled');
+      }
+
+      const selectedOpt = this.selectEl.options[this.selectEl.selectedIndex];
+      if (selectedOpt) {
+        this.labelEl.textContent = selectedOpt.textContent || selectedOpt.innerText || '';
+        if (selectedOpt.value === '' && selectedOpt.disabled) {
+          this.labelEl.classList.add('pm-dropdown-placeholder');
+        } else {
+          this.labelEl.classList.remove('pm-dropdown-placeholder');
+        }
+      } else {
+        this.labelEl.textContent = 'Seleccionar...';
+        this.labelEl.classList.add('pm-dropdown-placeholder');
+      }
+    }
+
+    toggle() {
+      if (this.isOpen) {
+        this.close();
+      } else {
+        this.open();
+      }
+    }
+
+    open() {
+      closeActive();
+      activeInstance = this;
+      this.isOpen = true;
+      this.searchQuery = '';
+      this.highlightedIndex = this.selectEl.selectedIndex >= 0 ? this.selectEl.selectedIndex : 0;
+
+      const portal = ensurePortal();
+      this.triggerEl.classList.add('pm-active');
+      this.triggerEl.setAttribute('aria-expanded', 'true');
+
+      this.renderPortalContent();
+      this.updatePosition();
+
+      portal.classList.add('pm-visible');
+
+      const searchInp = portal.querySelector('.pm-dropdown-search-inp');
+      if (searchInp) {
+        setTimeout(() => searchInp.focus(), 20);
+      }
+
+      const activeItem = portal.querySelector('.pm-dropdown-item.pm-selected') || portal.querySelector('.pm-dropdown-item.pm-highlighted');
+      if (activeItem) {
+        setTimeout(() => {
+          activeItem.scrollIntoView({ block: 'nearest' });
+        }, 20);
+      }
+    }
+
+    close() {
+      if (!this.isOpen) return;
+      this.isOpen = false;
+      this.triggerEl.classList.remove('pm-active');
+      this.triggerEl.setAttribute('aria-expanded', 'false');
+      if (portalEl) {
+        portalEl.classList.remove('pm-visible');
+        portalEl.innerHTML = '';
+      }
+      if (activeInstance === this) {
+        activeInstance = null;
+      }
+    }
+
+    updatePosition() {
+      if (!this.isOpen || !portalEl) return;
+      const rect = this.triggerEl.getBoundingClientRect();
+      const viewportH = window.innerHeight;
+      const viewportW = window.innerWidth;
+
+      const spaceBelow = viewportH - rect.bottom;
+      const spaceAbove = rect.top;
+      const portalHeight = portalEl.offsetHeight || 220;
+
+      let top = rect.bottom + 6;
+      let openUp = false;
+
+      if (spaceBelow < 210 && spaceAbove > spaceBelow) {
+        top = rect.top - portalHeight - 6;
+        openUp = true;
+      }
+
+      if (openUp) {
+        portalEl.classList.add('pm-open-up');
+      } else {
+        portalEl.classList.remove('pm-open-up');
+      }
+
+      let width = Math.max(rect.width, 160);
+      let left = rect.left;
+
+      if (left + width > viewportW - 12) {
+        left = Math.max(10, viewportW - width - 12);
+      }
+      if (left < 10) left = 10;
+
+      portalEl.style.top = `${Math.round(top)}px`;
+      portalEl.style.left = `${Math.round(left)}px`;
+      portalEl.style.width = `${Math.round(width)}px`;
+      portalEl.style.minWidth = `${Math.round(Math.min(width, viewportW - 20))}px`;
+    }
+
+    renderPortalContent() {
+      if (!portalEl) return;
+
+      const options = Array.from(this.selectEl.options);
+      const totalCount = options.length;
+      const showSearch = totalCount >= 8;
+
+      let filteredOptions = options;
+      if (this.searchQuery.trim()) {
+        const q = this.searchQuery.toLowerCase().trim();
+        filteredOptions = options.filter(opt => (opt.textContent || '').toLowerCase().includes(q));
+      }
+
+      let searchHtml = '';
+      if (showSearch) {
+        searchHtml = `
+          <div class="pm-dropdown-search-ctn">
+            <input type="text" class="pm-dropdown-search-inp" placeholder="Buscar opción... (Enter para elegir)" value="${pmEscape(this.searchQuery)}">
+          </div>
+        `;
+      }
+
+      let listHtml = '';
+      if (filteredOptions.length === 0) {
+        listHtml = `<div class="pm-dropdown-empty">No se encontraron resultados</div>`;
+      } else {
+        // Determine which item should have initial highlight
+        let highlightFound = false;
+        filteredOptions.forEach((opt) => {
+          const isSelected = (opt.index === this.selectEl.selectedIndex);
+          const isDisabled = opt.disabled;
+          const isPlaceholder = (opt.value === '' && opt.disabled);
+          const isHighlighted = (!highlightFound && !isDisabled && !isPlaceholder && (opt.index === this.highlightedIndex || (this.searchQuery && !filteredOptions.some(o => o.index === this.highlightedIndex))));
+
+          if (isHighlighted) {
+            highlightFound = true;
+            this.highlightedIndex = opt.index;
+          }
+
+          const text = opt.textContent || opt.innerText || '';
+
+          listHtml += `
+            <div class="pm-dropdown-item ${isSelected ? 'pm-selected' : ''} ${isHighlighted ? 'pm-highlighted' : ''} ${isDisabled ? 'pm-disabled' : ''} ${isPlaceholder ? 'pm-placeholder-item' : ''}" data-index="${opt.index}" role="option" aria-selected="${isSelected ? 'true' : 'false'}">
+              <span>${pmEscape(text)}</span>
+              ${isSelected ? '<span class="pm-dropdown-item-check">✓</span>' : ''}
+            </div>
+          `;
+        });
+      }
+
+      portalEl.innerHTML = `
+        ${searchHtml}
+        <div class="pm-dropdown-list">
+          ${listHtml}
+        </div>
+      `;
+
+      const searchInp = portalEl.querySelector('.pm-dropdown-search-inp');
+      if (searchInp) {
+        searchInp.addEventListener('input', (e) => {
+          this.searchQuery = e.target.value;
+          this.renderPortalContent();
+          this.updatePosition();
+          const nextInp = portalEl.querySelector('.pm-dropdown-search-inp');
+          if (nextInp) {
+            nextInp.focus();
+            nextInp.setSelectionRange(nextInp.value.length, nextInp.value.length);
+          }
+        });
+        searchInp.addEventListener('click', (e) => e.stopPropagation());
+      }
+
+      const items = portalEl.querySelectorAll('.pm-dropdown-item:not(.pm-disabled):not(.pm-placeholder-item)');
+      items.forEach(item => {
+        item.addEventListener('mouseenter', () => {
+          items.forEach(it => it.classList.remove('pm-highlighted'));
+          item.classList.add('pm-highlighted');
+          this.highlightedIndex = parseInt(item.getAttribute('data-index'), 10);
+        });
+        item.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const idx = parseInt(item.getAttribute('data-index'), 10);
+          this.selectIndex(idx);
+        });
+      });
+    }
+
+    highlightIndex(targetIndex) {
+      if (!portalEl) return;
+      const items = Array.from(portalEl.querySelectorAll('.pm-dropdown-item:not(.pm-disabled):not(.pm-placeholder-item)'));
+      const targetItem = items.find(it => parseInt(it.getAttribute('data-index'), 10) === targetIndex);
+      if (targetItem) {
+        items.forEach(it => it.classList.remove('pm-highlighted'));
+        targetItem.classList.add('pm-highlighted');
+        targetItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        this.highlightedIndex = targetIndex;
+      }
+    }
+
+    selectHighlighted() {
+      if (!portalEl) return;
+      const items = Array.from(portalEl.querySelectorAll('.pm-dropdown-item:not(.pm-disabled):not(.pm-placeholder-item)'));
+      if (items.length === 0) return;
+
+      const highlightedItem = items.find(el => el.classList.contains('pm-highlighted')) || items.find(el => el.classList.contains('pm-selected')) || items[0];
+      if (highlightedItem) {
+        const idx = parseInt(highlightedItem.getAttribute('data-index'), 10);
+        if (!isNaN(idx)) {
+          this.selectIndex(idx);
+        }
+      }
+    }
+
+    selectIndex(idx, shouldFocusTrigger = true) {
+      if (idx < 0 || idx >= this.selectEl.options.length) return;
+      const opt = this.selectEl.options[idx];
+      if (opt.disabled) return;
+
+      this.selectEl.selectedIndex = idx;
+      this.selectEl.value = opt.value;
+      this.syncFromNative();
+      this.close();
+
+      if (shouldFocusTrigger && this.triggerEl) {
+        this.triggerEl.focus();
+      }
+
+      this.selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+      this.selectEl.dispatchEvent(new Event('input', { bubbles: true }));
+
+      if (typeof this.selectEl.onchange === 'function') {
+        try {
+          this.selectEl.onchange.call(this.selectEl, { target: this.selectEl, type: 'change' });
+        } catch(e) {
+          console.warn('Dropdown onchange error:', e);
+        }
+      }
+    }
+
+    navigateOptions(direction) {
+      if (!portalEl) return;
+      const items = Array.from(portalEl.querySelectorAll('.pm-dropdown-item:not(.pm-disabled):not(.pm-placeholder-item)'));
+      if (items.length === 0) return;
+
+      let currentIndex = items.findIndex(el => el.classList.contains('pm-highlighted'));
+      if (currentIndex === -1) {
+        currentIndex = items.findIndex(el => el.classList.contains('pm-selected'));
+      }
+
+      let targetIndex = 0;
+      if (direction === 'first') {
+        targetIndex = 0;
+      } else if (direction === 'last') {
+        targetIndex = items.length - 1;
+      } else if (typeof direction === 'number') {
+        if (currentIndex === -1) {
+          targetIndex = direction > 0 ? 0 : items.length - 1;
+        } else {
+          targetIndex = currentIndex + direction;
+          if (targetIndex < 0) targetIndex = items.length - 1;
+          if (targetIndex >= items.length) targetIndex = 0;
+        }
+      }
+
+      items.forEach((it, i) => {
+        if (i === targetIndex) {
+          it.classList.add('pm-highlighted');
+          it.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          this.highlightedIndex = parseInt(it.getAttribute('data-index'), 10);
+        } else {
+          it.classList.remove('pm-highlighted');
+        }
+      });
+    }
+  }
+
+  function enhance(selectEl) {
+    if (!selectEl || selectEl.nodeName !== 'SELECT') return null;
+    if (selectEl._pmDropdown) {
+      selectEl._pmDropdown.syncFromNative();
+      return selectEl._pmDropdown;
+    }
+    const instance = new DropdownInstance(selectEl);
+    selectEl._pmDropdown = instance;
+    return instance;
+  }
+
+  function initAll(root = document) {
+    if (!root) return;
+    const selects = root.querySelectorAll('select:not(.pm-no-custom)');
+    selects.forEach(s => enhance(s));
+  }
+
+  function autoObserve() {
+    initAll();
+    const domObserver = new MutationObserver((mutations) => {
+      let needsScan = false;
+      for (const m of mutations) {
+        if (m.addedNodes && m.addedNodes.length > 0) {
+          for (const node of m.addedNodes) {
+            if (node.nodeType === 1) {
+              if (node.nodeName === 'SELECT' || (node.querySelector && node.querySelector('select'))) {
+                needsScan = true;
+                break;
+              }
+            }
+          }
+        }
+        if (needsScan) break;
+      }
+      if (needsScan) {
+        initAll();
+      }
+    });
+
+    if (document.body) {
+      domObserver.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    } else {
+      document.addEventListener('DOMContentLoaded', () => {
+        domObserver.observe(document.body, {
+          childList: true,
+          subtree: true
+        });
+      });
+    }
+  }
+
+  return {
+    enhance,
+    initAll,
+    autoObserve,
+    closeActive
+  };
+})();
+
+// Auto-initialize PromediaDropdown
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => PromediaDropdown.autoObserve());
+} else {
+  PromediaDropdown.autoObserve();
+}
+
 // ════════════════════════════════════════════════
 //  LUCIDE ICONS
 // ════════════════════════════════════════════════
@@ -10005,6 +10885,9 @@ function openSheet(id, skipHistory) {
   if (!el) return;
   if (!el.classList.contains('open')) {
     el.classList.add('open');
+    if (typeof PromediaDropdown !== 'undefined') {
+      PromediaDropdown.initAll(el);
+    }
     if (!skipHistory && window.history && window.history.pushState) {
       try {
         history.pushState({ type: 'sheet', id: id }, '');
@@ -10016,6 +10899,9 @@ function openSheet(id, skipHistory) {
 function closeSheet(id, skipHistory) {
   const el = document.getElementById(id);
   if (!el) return;
+  if (typeof PromediaDropdown !== 'undefined') {
+    PromediaDropdown.closeActive();
+  }
   if (el.classList.contains('open')) {
     el.classList.remove('open');
     if (!skipHistory && window.history && window.history.state && window.history.state.type === 'sheet' && window.history.state.id === id) {
